@@ -1,7 +1,8 @@
-﻿using ColossalFramework;
+using ColossalFramework;
 using ICities;
 using System;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using UnityEngine;
 
 namespace AdditiveShader
@@ -19,6 +20,7 @@ namespace AdditiveShader
         void Start()
         {
             shaderInfos = new List<AdditiveShaderInfo>();
+
             foreach (PropInfo prop in Resources.FindObjectsOfTypeAll<PropInfo>())
             {
                 if (prop == null)
@@ -31,7 +33,7 @@ namespace AdditiveShader
                 {
                     string[] data = prop.m_mesh.name.Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries);
                     var psi = new AdditiveShaderInfo();
-                    psi.m_assetType = "prop";
+                    psi.m_assetType = AssetType.Prop;
                     psi.m_prop = prop;
                     psi.m_building = null;
                     psi.m_buildingSubMesh = null;
@@ -58,7 +60,7 @@ namespace AdditiveShader
                 {
                     string[] data = building.m_mesh.name.Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries);
                     var psi = new AdditiveShaderInfo();
-                    psi.m_assetType = "building";
+                    psi.m_assetType = AssetType.Building;
                     psi.m_building = building;
                     psi.m_buildingSubMesh = null;
                     psi.m_vehicleSubMesh = null;
@@ -93,7 +95,7 @@ namespace AdditiveShader
                 {
                     string[] data = buildingSubMesh.m_mesh.name.Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries);
                     var psi = new AdditiveShaderInfo();
-                    psi.m_assetType = "buildingSubMesh";
+                    psi.m_assetType = AssetType.BuildingSubMesh;
                     psi.m_building = null;
                     psi.m_buildingSubMesh = buildingSubMesh;
                     psi.m_vehicleSubMesh = null;
@@ -120,7 +122,7 @@ namespace AdditiveShader
                 {
                     string[] data = vehicleSubMesh.m_mesh.name.Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries);
                     var psi = new AdditiveShaderInfo();
-                    psi.m_assetType = "vehicleSubMesh";
+                    psi.m_assetType =  AssetType.VehicleSubMesh;
                     psi.m_building = null;
                     psi.m_buildingSubMesh = null;
                     psi.m_vehicleSubMesh = vehicleSubMesh;
@@ -290,14 +292,22 @@ namespace AdditiveShader
         {
             if (!info.m_enabled)
             {
-                if (info.m_assetType == "prop")
-                    EnableShaderProp(info.m_prop, info);
-                else if (info.m_assetType == "building")
-                    EnableShaderBuilding(info.m_building, info);
-                else if (info.m_assetType == "buildingSubMesh")
-                    EnableShaderBuildingSubMesh(info.m_buildingSubMesh, info);
-                else if (info.m_assetType == "vehicleSubMesh")
-                    EnableShaderVehicleSubMesh(info.m_vehicleSubMesh, info);
+                switch (info.m_assetType)
+                {
+                    case AssetType.Prop:
+                        EnableShaderProp(info.m_prop, info);
+                        break;
+                    case AssetType.Building:
+                        EnableShaderBuilding(info.m_building, info);
+                        break;
+                    case AssetType.BuildingSubMesh:
+                        EnableShaderBuildingSubMesh(info.m_buildingSubMesh, info);
+                        break;
+                    case AssetType.VehicleSubMesh:
+                        EnableShaderVehicleSubMesh(info.m_vehicleSubMesh, info);
+                        break;
+                }
+
                 info.m_enabled = true;
             }
         }
@@ -305,15 +315,23 @@ namespace AdditiveShader
         {
             if (info.m_enabled)
             {
-                if (info.m_assetType == "prop")
-                    DisableShaderProp(info.m_prop, info);
-                else if (info.m_assetType == "building")
-                    DisableShaderBuilding(info.m_building, info);
-                else if (info.m_assetType == "buildingSubMesh")
-                    DisableShaderBuildingSubMesh(info.m_buildingSubMesh, info);
-                else if (info.m_assetType == "vehicleSubMesh")
-                    DisableShaderVehicleSubMesh(info.m_vehicleSubMesh, info);
                 info.m_enabled = false;
+
+                switch (info.m_assetType)
+                {
+                    case AssetType.Prop:
+                        DisableShaderProp(info.m_prop, info);
+                        break;
+                    case AssetType.Building:
+                        DisableShaderBuilding(info.m_building, info);
+                        break;
+                    case AssetType.BuildingSubMesh:
+                        DisableShaderBuildingSubMesh(info.m_buildingSubMesh, info);
+                        break;
+                    case AssetType.VehicleSubMesh:
+                        DisableShaderVehicleSubMesh(info.m_vehicleSubMesh, info);
+                        break;
+                }
             }
         }
     }
@@ -328,22 +346,26 @@ namespace AdditiveShader
         public BuildingInfo m_building;
         public BuildingInfoSub m_buildingSubMesh;
         public VehicleInfoSub m_vehicleSubMesh;
-        public string m_assetType;
+        public AssetType m_assetType;
         public bool m_enabled;
 
         public PrefabInfo Prefab
         {
             get
             {
-                if (m_assetType == "prop")
-                    return m_prop;
-                else if (m_assetType == "building")
-                    return m_building;
-                else if (m_assetType == "buildingSubMesh")
-                    return m_buildingSubMesh;
-                else if (m_assetType == "vehicleSubMesh")
-                    return m_vehicleSubMesh;
-                else return null;
+                switch (m_assetType)
+                {
+                    case AssetType.Prop:
+                        return m_prop;
+                    case AssetType.Building:
+                        return m_building;
+                    case AssetType.BuildingSubMesh:
+                        return m_buildingSubMesh;
+                    case AssetType.VehicleSubMesh:
+                        return m_vehicleSubMesh;
+                    default:
+                        return null;
+                }
             }
         }
 
