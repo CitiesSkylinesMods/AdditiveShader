@@ -6,41 +6,6 @@ using UnityEngine;
 
 namespace AdditiveShader
 {
-    public class AdditiveShaderMod : LoadingExtensionBase, IUserMod
-    {
-        private GameObject gameobj;
-
-        public string Name
-        {
-            get { return "Additive Shader"; }
-        }
-        public string Description
-        {
-            get { return "Allows time-of-day dependent use of additive shader on props and buildings."; }
-        }
-
-        public override void OnLevelLoaded(LoadMode mode)
-        {
-            base.OnLevelLoaded(mode);
-            if (mode == LoadMode.NewGame || mode == LoadMode.LoadGame)
-            {
-                gameobj = new GameObject();
-                gameobj.AddComponent<AdditiveShaderLogic>();
-            }
-        }
-
-        public override void OnLevelUnloading()
-        {
-            base.OnLevelUnloading();
-            if (gameobj != null)
-            {
-                UnityEngine.Object.Destroy(gameobj);
-                gameobj = null;
-            }
-
-        }
-
-    }
 
     public class AdditiveShaderLogic : MonoBehaviour
     {
