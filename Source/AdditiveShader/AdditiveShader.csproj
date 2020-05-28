@@ -1,38 +1,51 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{E1C991C9-29CA-4C80-A982-E2DE9ADCC940}</ProjectGuid>
-    <TargetFramework>net35</TargetFramework>
-    <AssemblyTitle>AdditiveShader</AssemblyTitle>
-    <Product>AdditiveShader</Product>
-    <Copyright>Copyright ©  2017</Copyright>
-    <PostBuildEvent>mkdir "%25LOCALAPPDATA%25\Colossal Order\Cities_Skylines\Addons\Mods\$(SolutionName)"
-del "%25LOCALAPPDATA%25\Colossal Order\Cities_Skylines\Addons\Mods\$(SolutionName)\$(TargetFileName)"
-xcopy /y "$(TargetPath)" "%25LOCALAPPDATA%25\Colossal Order\Cities_Skylines\Addons\Mods\$(SolutionName)"</PostBuildEvent>
-    <PostBuildEvent>mkdir "%25LOCALAPPDATA%25\Colossal Order\Cities_Skylines\Addons\Mods\$(SolutionName)"
-del "%25LOCALAPPDATA%25\Colossal Order\Cities_Skylines\Addons\Mods\$(SolutionName)\$(TargetFileName)"
-xcopy /y "$(TargetPath)" "%25LOCALAPPDATA%25\Colossal Order\Cities_Skylines\Addons\Mods\$(SolutionName)"</PostBuildEvent>
-    <PostBuildEvent>mkdir "%25LOCALAPPDATA%25\Colossal Order\Cities_Skylines\Addons\Mods\$(SolutionName)"
-del "%25LOCALAPPDATA%25\Colossal Order\Cities_Skylines\Addons\Mods\$(SolutionName)\$(TargetFileName)"
-xcopy /y "$(TargetPath)" "%25LOCALAPPDATA%25\Colossal Order\Cities_Skylines\Addons\Mods\$(SolutionName)"</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PostBuildEvent>mkdir "%25LOCALAPPDATA%25\Colossal Order\Cities_Skylines\Addons\Mods\$(SolutionName)"
-del "%25LOCALAPPDATA%25\Colossal Order\Cities_Skylines\Addons\Mods\$(SolutionName)\$(TargetFileName)"
-xcopy /y "$(TargetPath)" "%25LOCALAPPDATA%25\Colossal Order\Cities_Skylines\Addons\Mods\$(SolutionName)"</PostBuildEvent>
+    <AssemblyTitle>AdditiveShader</AssemblyTitle>
+    <Product>AdditiveShader</Product>
+    <Description>Allows time-of-day dependent use of additive shader on props and buildings.</Description>
+    <Copyright>Copyright © 2017-2020, Ronyx69, Simon Ryr, and Contributors</Copyright>
+  </PropertyGroup>
+  <PropertyGroup>
+    <TargetFramework>net35</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <OutputPath>..\bin\$(Configuration)\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SteamPath>~/Library/Application Support/Steam/</SteamPath>
+    <SteamPath Condition="! Exists ('$(SteamPath)')">$(ProgramFiles)\Steam</SteamPath>
+    <SteamPath Condition="! Exists ('$(SteamPath)')">$(Registry:HKEY_CURRENT_USER\Software\Valve\Steam@SteamPath)</SteamPath>
+    <CSPath>$(SteamPath)\steamapps\common\Cities_Skylines</CSPath>
+    <MangedDLLPath>$(CSPath)\Cities_Data\Managed</MangedDLLPath>
+    <MangedDLLPath Condition="!  Exists ('$(MangedDLLPath)')">..\dependencies</MangedDLLPath>
+    <AssemblySearchPaths>
+      $(MangedDLLPath);
+      $(AssemblySearchPaths);
+      $(CitiesSkylinesBinaries)
+    </AssemblySearchPaths>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Assembly-CSharp">
-      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Cities_Skylines\Cities_Data\Managed\Assembly-CSharp.dll</HintPath>
-    </Reference>
-    <Reference Include="ColossalManaged">
-      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Cities_Skylines\Cities_Data\Managed\ColossalManaged.dll</HintPath>
-    </Reference>
-    <Reference Include="ICities">
-      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Cities_Skylines\Cities_Data\Managed\ICities.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="UnityEngine">
-      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Cities_Skylines\Cities_Data\Managed\UnityEngine.dll</HintPath>
-    </Reference>
+    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.8" />
+    <PackageReference Include="Roslynator.Analyzers" Version="2.3.0"/>
+    <PackageReference Include="Roslynator.CodeAnalysis.Analyzers" Version="1.0.0-beta"/>
+    <PackageReference Include="StyleCop.Analyzers.Unstable" Version="1.2.0.164" />
   </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp" />
+    <Reference Include="ColossalManaged" />
+    <Reference Include="ICities" />
+    <Reference Include="UnityEngine" />
+  </ItemGroup>
+  <Target Name="DeployToModsDirectory" AfterTargets="Build" DependsOnTargets="Build">
+    <PropertyGroup>
+      <CitiesSkylinesModDir>TODO</CitiesSkylinesModDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <TargetBinaries Include="$(OutputPath)*.dll" />
+    </ItemGroup>
+    <Message Text="Deploying the mod package to: $(CitiesSkylinesModDir)" Importance="high" />
+    <Copy SourceFiles="@(TargetBinaries)" DestinationFolder="$(CitiesSkylinesModDir)" SkipUnchangedFiles="true" />
+  </Target>
 </Project>

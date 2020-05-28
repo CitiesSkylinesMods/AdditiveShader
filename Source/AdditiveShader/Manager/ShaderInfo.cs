@@ -1,35 +1,58 @@
-namespace AdditiveShader
+namespace AdditiveShader.Manager
 {
     using System;
 
     /// <summary>
-    /// This class is used to extract and parse parameters from a mesh name.
-    ///
+    /// <para>This class is used to extract and parse parameters from a mesh name.</para>
+    /// <para>
     /// It also derives whether the shader stays on across the midnight boundary,
     /// and whether it is always on.
+    /// </para>
     /// </summary>
-    public class ShaderParams
+    public class ShaderInfo
     {
         /// <summary>
         /// Delimiter used for splitting the mesh name in to raw parameter array.
         /// </summary>
         private static readonly char[] DELIMITER = new[] { ' ' };
 
-        public ShaderParams(string meshName)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ShaderInfo"/> class
+        /// by parsing the shader settings from the mesh name.
+        /// </summary>
+        /// <param name="meshName"><para>The mesh name for the asset that contains the additive shader.</para>
+        /// <para>
+        /// Must be in the following format: <code>"AdditiveShader On Off Fade Intensity"</code>
+        /// as defined by <see cref="https://cslmodding.info/mod/additive-shader/"/>.
+        /// </para>
+        /// </param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="meshName"/> is <c>null</c>.</exception>
+        public ShaderInfo(string meshName)
         {
-            string[] raw = meshName.Split(DELIMITER, StringSplitOptions.RemoveEmptyEntries);
-
-            OnTime    = float.Parse(raw[1]);
-            OffTime   = float.Parse(raw[2]);
-            Fade      = float.Parse(raw[3]);
-            Intensity = float.Parse(raw[4]);
+            if (meshName == null)
+                throw new ArgumentNullException(nameof(meshName));
 
             // TODO: Would be nice if tags (folksonomy) could be added to allow other mods to toggle shaders on/off.
+            Raw = meshName.Split(DELIMITER, StringSplitOptions.RemoveEmptyEntries);
+
+            OnTime    = float.Parse(Raw[1]);
+            OffTime   = float.Parse(Raw[2]);
+            Fade      = float.Parse(Raw[3]);
+            Intensity = float.Parse(Raw[4]);
 
             AlwaysOn = OnTime == OffTime;
 
             OverlapsMidnight = OnTime > OffTime;
         }
+
+        /// <inheritdoc/>
+        public override string ToString() =>
+            $"ShaderInfo('{Raw[0]} {Raw[1]} {Raw[2]} {Raw[3]} {Raw[4]}'), AlwaysOn: {AlwaysOn}, OverlapsMidnight: {OverlapsMidnight}";
+
+        /// <summary>
+        /// The raw shader parameters split from the mesh name.
+        /// </summary>
+        private readonly string[] Raw;
 
         /// <summary>
         /// Gets a value which determines what game time the shader is made visible.
