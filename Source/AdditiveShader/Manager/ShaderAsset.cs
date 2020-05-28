@@ -16,20 +16,20 @@ namespace AdditiveShader.Manager
         /// Initializes a new instance of the <see cref="ShaderAsset"/> class
         /// for a <see cref="PropInfo"/> asset.
         /// </summary>
-        /// <param name="info">The <see cref="PropInfo"/> which uses the shader.</param>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="info"/> is <c>null</c>.</exception>
-        public ShaderAsset(PropInfo info)
+        /// <param name="asset">The <see cref="PropInfo"/> which uses the shader.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="asset"/> is <c>null</c>.</exception>
+        public ShaderAsset(PropInfo asset)
         {
             TypeOfAsset = AssetType.Prop;
-            Prop = info ?? throw new ArgumentNullException(nameof(info));
+            Prop = asset ?? throw new ArgumentNullException(nameof(asset));
 
-            Info = new ShaderInfo(info.m_mesh.name);
+            Info = new ShaderInfo(asset.m_mesh.name);
 
-            info.m_lodHasDifferentShader = false;
-            info.m_material.SetFloat("_InvFade", Info.Fade);
-            info.m_lodRenderDistance = info.m_maxRenderDistance = GetRenderDistance(info.m_generatedInfo.m_size);
+            asset.m_lodHasDifferentShader = false;
+            asset.m_material.SetFloat("_InvFade", Info.Fade);
+            asset.m_lodRenderDistance = asset.m_maxRenderDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
 
-            SetVisible(info, Info.AlwaysOn);
+            SetVisible(asset, Info.AlwaysOn);
 
             Debug.Log($"[AdditiveShader] {this} {Info}");
         }
@@ -38,22 +38,22 @@ namespace AdditiveShader.Manager
         /// Initializes a new instance of the <see cref="ShaderAsset"/> class
         /// for a <see cref="BuildingInfo"/> asset.
         /// </summary>
-        /// <param name="info">The <see cref="BuildingInfo"/> which uses the shader.</param>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="info"/> is <c>null</c>.</exception>
-        public ShaderAsset(BuildingInfo info)
+        /// <param name="asset">The <see cref="BuildingInfo"/> which uses the shader.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="asset"/> is <c>null</c>.</exception>
+        public ShaderAsset(BuildingInfo asset)
         {
             TypeOfAsset = AssetType.Building;
-            Building = info ?? throw new ArgumentNullException(nameof(info));
+            Building = asset ?? throw new ArgumentNullException(nameof(asset));
 
-            Info = new ShaderInfo(info.m_mesh.name);
+            Info = new ShaderInfo(asset.m_mesh.name);
 
-            info.m_lodHasDifferentShader = false;
-            info.m_lodMissing = true;
-            info.m_material.SetFloat("_InvFade", Info.Fade);
-            info.m_mesh.colors = GetMeshColors(info.m_mesh.vertices.Length);
-            info.m_maxLodDistance = info.m_minLodDistance = GetRenderDistance(info.m_generatedInfo.m_size);
+            asset.m_lodHasDifferentShader = false;
+            asset.m_lodMissing = true;
+            asset.m_material.SetFloat("_InvFade", Info.Fade);
+            asset.m_mesh.colors = GetMeshColors(asset.m_mesh.vertices.Length);
+            asset.m_maxLodDistance = asset.m_minLodDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
 
-            SetVisible(info, Info.AlwaysOn);
+            SetVisible(asset, Info.AlwaysOn);
 
             Debug.Log($"[AdditiveShader] {this} {Info}");
         }
@@ -62,21 +62,21 @@ namespace AdditiveShader.Manager
         /// Initializes a new instance of the <see cref="ShaderAsset"/> class
         /// for a <see cref="BuildingInfoSub"/> asset.
         /// </summary>
-        /// <param name="info">The <see cref="BuildingInfoSub"/> which uses the shader.</param>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="info"/> is <c>null</c>.</exception>
-        public ShaderAsset(BuildingInfoSub info)
+        /// <param name="asset">The <see cref="BuildingInfoSub"/> which uses the shader.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="asset"/> is <c>null</c>.</exception>
+        public ShaderAsset(BuildingInfoSub asset)
         {
             TypeOfAsset = AssetType.SubBuilding;
-            SubBuilding = info ?? throw new ArgumentNullException(nameof(info));
+            SubBuilding = asset ?? throw new ArgumentNullException(nameof(asset));
 
-            Info = new ShaderInfo(info.m_mesh.name);
+            Info = new ShaderInfo(asset.m_mesh.name);
 
-            info.m_lodHasDifferentShader = false;
-            info.m_material.SetFloat("_InvFade", Info.Fade);
-            info.m_mesh.colors = GetMeshColors(info.m_mesh.vertices.Length);
-            info.m_maxLodDistance = info.m_minLodDistance = GetRenderDistance(info.m_generatedInfo.m_size);
+            asset.m_lodHasDifferentShader = false;
+            asset.m_material.SetFloat("_InvFade", Info.Fade);
+            asset.m_mesh.colors = GetMeshColors(asset.m_mesh.vertices.Length);
+            asset.m_maxLodDistance = asset.m_minLodDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
 
-            SetVisible(info, Info.AlwaysOn);
+            SetVisible(asset, Info.AlwaysOn);
 
             Debug.Log($"[AdditiveShader] {this} {Info}");
         }
@@ -85,28 +85,29 @@ namespace AdditiveShader.Manager
         /// Initializes a new instance of the <see cref="ShaderAsset"/> class
         /// for a <see cref="VehicleInfoSub"/> asset.
         /// </summary>
-        /// <param name="info">The <see cref="VehicleInfoSub"/> which uses the shader.</param>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="info"/> is <c>null</c>.</exception>
-        public ShaderAsset(VehicleInfoSub info)
+        /// <param name="asset">The <see cref="VehicleInfoSub"/> which uses the shader.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="asset"/> is <c>null</c>.</exception>
+        public ShaderAsset(VehicleInfoSub asset)
         {
             TypeOfAsset = AssetType.Vehicle;
-            Vehicle = info ?? throw new ArgumentNullException(nameof(info));
+            Vehicle = asset ?? throw new ArgumentNullException(nameof(asset));
 
-            Info = new ShaderInfo(info.m_mesh.name);
+            Info = new ShaderInfo(asset.m_mesh.name);
 
-            info.m_material.SetFloat("_InvFade", Info.Fade);
-            info.m_mesh.colors = GetMeshColors(info.m_mesh.vertices.Length);
-            info.m_lodRenderDistance = info.m_maxRenderDistance = GetRenderDistance(info.m_generatedInfo.m_size);
+            asset.m_material.SetFloat("_InvFade", Info.Fade);
+            asset.m_mesh.colors = GetMeshColors(asset.m_mesh.vertices.Length);
+            asset.m_lodRenderDistance = asset.m_maxRenderDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
 
-            SetVisible(info, Info.AlwaysOn);
+            SetVisible(asset, Info.AlwaysOn);
 
             Debug.Log($"[AdditiveShader] {this} {Info}");
         }
 
         /// <summary>
-        /// Gets or sets a value indicating whether the additive shader for the asset is currently visible.
+        /// <para>Gets a value indicating whether the additive shader for the asset is currently visible.</para>
+        /// <para>Use <see cref="Show()"/>, <see cref="Hide()"/> or <see cref="SetVisible(bool)"/> to change visibility.</para>
         /// </summary>
-        public bool IsVisible { get; set; }
+        public bool IsVisible { get; private set; }
 
         /// <summary>
         /// <para>Gets a value indicating what type of asset this instance represents.</para>

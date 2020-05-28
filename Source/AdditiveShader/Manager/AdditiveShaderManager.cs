@@ -52,7 +52,8 @@ namespace AdditiveShader.Manager
         }
 
         /// <summary>
-        /// Sets visibility of the additive shaders depending on game time.
+        /// <para>Sets visibility of the additive shaders depending on game time.</para>
+        /// <para>PERFORMANCE CRITICAL.</para>
         /// </summary>
         [UsedImplicitly]
         public void Update()
