@@ -4,6 +4,8 @@ namespace AdditiveShader
     using ICities;
     using JetBrains.Annotations;
 
+    // Remember to check the folders in Solution > Infrastructure > Directory.Build.props before building --->
+
     /// <summary>
     /// Main interface to the game.
     /// </summary>
