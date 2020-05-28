@@ -1,18 +1,16 @@
-﻿using ICities;
-using JetBrains.Annotations;
-using UnityEngine;
-
 namespace AdditiveShader
 {
+    using ICities;
+    using JetBrains.Annotations;
+    using UnityEngine;
+
     public class Loading : LoadingExtensionBase
     {
         private GameObject gameobj;
 
-        private bool IsApplicable(LoadMode mode)
-        {
-            return mode == LoadMode.NewGame
-                || mode == LoadMode.LoadGame;
-        }
+        private bool IsApplicable(LoadMode mode) =>
+            mode == LoadMode.NewGame ||
+            mode == LoadMode.LoadGame;
 
         [UsedImplicitly]
         public override void OnLevelLoaded(LoadMode mode)
@@ -22,7 +20,7 @@ namespace AdditiveShader
             if (Mod.IsEnabled && IsApplicable(mode))
             {
                 gameobj = new GameObject();
-                gameobj.AddComponent<AdditiveShaderLogic>();
+                gameobj.AddComponent<AdditiveShaderManager>();
             }
         }
 
