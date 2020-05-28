@@ -1,8 +1,8 @@
-﻿using ICities;
-using JetBrains.Annotations;
-
 namespace AdditiveShader
 {
+    using ICities;
+    using JetBrains.Annotations;
+
     public class Mod : IUserMod
     {
         [UsedImplicitly]
