@@ -1,9 +1,16 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26430.16
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30104.148
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdditiveShader", "AdditiveShader\AdditiveShader.csproj", "{E1C991C9-29CA-4C80-A982-E2DE9ADCC940}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AdditiveShader", "AdditiveShader\AdditiveShader.csproj", "{E1C991C9-29CA-4C80-A982-E2DE9ADCC940}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Infrastructure", "Infrastructure", "{BA257121-1155-4C44-AFD2-E7BF665FF693}"
+    ProjectSection(SolutionItems) = preProject
+        .editorconfig = .editorconfig
+        Directory.Build.props = Directory.Build.props
+        stylecop.json = stylecop.json
+    EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -18,5 +25,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {AABB6173-E526-44B7-ABA5-49E14CA2E065}
 	EndGlobalSection
 EndGlobal
