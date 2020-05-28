@@ -28,7 +28,7 @@ namespace AdditiveShader.Manager
         /// <summary>
         /// A list of assets which utilise the additive shader.
         /// </summary>
-        public List<ShaderAsset> Shaders;
+        private List<ShaderAsset> shaders;
 
         /// <summary>
         /// Is set to <c>true</c> once all the assets are initialised.
@@ -41,7 +41,7 @@ namespace AdditiveShader.Manager
         [UsedImplicitly]
         public void Start()
         {
-            Shaders = new List<ShaderAsset>();
+            shaders = new List<ShaderAsset>();
 
             Add_Props();
             Add_Buildings();
@@ -64,7 +64,7 @@ namespace AdditiveShader.Manager
             float time = Singleton<SimulationManager>.instance.m_currentDayTimeHour;
 
             // TODO: Need to spread iteration of the list over frames, but don't know how yet.
-            foreach (var shader in Shaders)
+            foreach (var shader in shaders)
             {
                 if (shader.Info.AlwaysOn)
                     continue;
@@ -76,7 +76,12 @@ namespace AdditiveShader.Manager
             }
         }
 
-        private bool HasShaderToken(string meshName) =>
+        /// <summary>
+        /// Check if a mesh name contains the additive shader token.
+        /// </summary>
+        /// <param name="meshName">The <c>m_mesh.name</c> to investigate.</param>
+        /// <returns>Returns <c>true</c> if the token is found, otherwise <c>false</c>.</returns>
+        private static bool HasShaderToken(string meshName) =>
             !string.IsNullOrEmpty(meshName) && meshName.Contains(TOKEN);
 
         /// <summary>
@@ -89,7 +94,7 @@ namespace AdditiveShader.Manager
                 try
                 {
                     if (HasShaderToken(prop?.m_mesh?.name))
-                        Shaders.Add(new ShaderAsset(prop));
+                        shaders.Add(new ShaderAsset(prop));
                 }
                 catch (Exception e)
                 {
@@ -98,11 +103,12 @@ namespace AdditiveShader.Manager
         }
 
         /// <summary>
-        /// Scans building assets, adding any using the shader to the list.
-        ///
+        /// <para>Scans building assets, adding any using the shader to the list.</para>
+        /// <para>
         /// Also checks the building props; if any use the shader the building
         /// prop distance is greatly increased to keep them visible longer (that's
         /// required _in addition_ to setting the distance on the props themselves).
+        /// </para>
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
         private void Add_Buildings()
@@ -111,7 +117,7 @@ namespace AdditiveShader.Manager
                 try
                 {
                     if (HasShaderToken(building?.m_mesh?.name))
-                        Shaders.Add(new ShaderAsset(building));
+                        shaders.Add(new ShaderAsset(building));
 
                     if (building.m_props == null || building.m_props.Length == 0)
                         continue;
@@ -139,7 +145,7 @@ namespace AdditiveShader.Manager
                 try
                 {
                     if (HasShaderToken(subBuilding?.m_mesh?.name))
-                        Shaders.Add(new ShaderAsset(subBuilding));
+                        shaders.Add(new ShaderAsset(subBuilding));
                 }
                 catch (Exception e)
                 {
@@ -157,7 +163,7 @@ namespace AdditiveShader.Manager
                 try
                 {
                     if (HasShaderToken(vehicle?.m_mesh?.name))
-                        Shaders.Add(new ShaderAsset(vehicle));
+                        shaders.Add(new ShaderAsset(vehicle));
                 }
                 catch (Exception e)
                 {

@@ -4,8 +4,11 @@ namespace AdditiveShader
     using ICities;
     using JetBrains.Annotations;
 
+    /// <summary>
+    /// Main interface to the game.
+    /// </summary>
     [UsedImplicitly]
-    public class Mod : IUserMod
+    public class UserMod : IUserMod
     {
         /// <summary>
         /// Gets or sets a value indicating whether the mod is currently enabled.

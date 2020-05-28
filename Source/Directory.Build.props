@@ -1,8 +1,9 @@
 <Project>
   <PropertyGroup>
-    <CitiesSkylinesBinaries Condition="'$(CitiesSkylinesBinaries)' == ''">
-      D:\Data\SteamLibrary\steamapps\common\Cities_Skylines\Cities_Data\Managed\
-    </CitiesSkylinesBinaries>
+    <!-- Path to managed game dlls: -->
+    <ManagedDllPath>C:\Program Files (x86)\Steam\steamapps\common\Cities_Skylines\Cities_Data\Managed\</ManagedDllPath>
+    <!-- Path where mod dll(s) will be published: -->
+    <PublishDllPath>C:\Program Files (x86)\Steam\steamapps\workshop\content\255710\1410003347\</PublishDllPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
 
@@ -15,7 +16,4 @@
     </Reference>
   </ItemDefinitionGroup>
 
-  <ItemGroup>
-    <AdditionalFiles Include="$(SolutionDir)stylecop.json" Visible="False" />
-  </ItemGroup>
 </Project>

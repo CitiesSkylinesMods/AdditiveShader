@@ -26,7 +26,7 @@ namespace AdditiveShader
         {
             base.OnLevelLoaded(mode);
 
-            if (Mod.IsEnabled && IsApplicable(mode))
+            if (UserMod.IsEnabled && IsApplicable(mode))
             {
                 gameobj = new GameObject();
                 gameobj.AddComponent<AdditiveShaderManager>();
