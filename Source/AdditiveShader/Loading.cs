@@ -28,6 +28,7 @@ namespace AdditiveShader
 
             if (UserMod.IsEnabled && IsApplicable(mode))
             {
+                Debug.Log($"[AdditiveShader] Initialising for LoadMode: {mode}");
                 gameobj = new GameObject();
                 gameobj.AddComponent<AdditiveShaderManager>();
             }

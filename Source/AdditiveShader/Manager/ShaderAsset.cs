@@ -9,9 +9,6 @@ namespace AdditiveShader.Manager
     /// </summary>
     public class ShaderAsset
     {
-        // TODO: Can these constructors be merged somehow? Most of what they do is identical
-        // there are a few diffs based on asset type but not enough to merit 4 bloated constructors.
-
         /// <summary>
         /// Initializes a new instance of the <see cref="ShaderAsset"/> class
         /// for a <see cref="PropInfo"/> asset.
@@ -29,9 +26,7 @@ namespace AdditiveShader.Manager
             asset.m_material.SetFloat("_InvFade", Info.Fade);
             asset.m_lodRenderDistance = asset.m_maxRenderDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
 
-            SetVisible(asset, Info.AlwaysOn);
-
-            Debug.Log($"[AdditiveShader] {this} {Info}");
+            SetVisible(Info.AlwaysOn);
         }
 
         /// <summary>
@@ -53,9 +48,7 @@ namespace AdditiveShader.Manager
             asset.m_mesh.colors = GetMeshColors(asset.m_mesh.vertices.Length);
             asset.m_maxLodDistance = asset.m_minLodDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
 
-            SetVisible(asset, Info.AlwaysOn);
-
-            Debug.Log($"[AdditiveShader] {this} {Info}");
+            SetVisible(Info.AlwaysOn);
         }
 
         /// <summary>
@@ -76,9 +69,7 @@ namespace AdditiveShader.Manager
             asset.m_mesh.colors = GetMeshColors(asset.m_mesh.vertices.Length);
             asset.m_maxLodDistance = asset.m_minLodDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
 
-            SetVisible(asset, Info.AlwaysOn);
-
-            Debug.Log($"[AdditiveShader] {this} {Info}");
+            SetVisible(Info.AlwaysOn);
         }
 
         /// <summary>
@@ -98,9 +89,7 @@ namespace AdditiveShader.Manager
             asset.m_mesh.colors = GetMeshColors(asset.m_mesh.vertices.Length);
             asset.m_lodRenderDistance = asset.m_maxRenderDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
 
-            SetVisible(asset, Info.AlwaysOn);
-
-            Debug.Log($"[AdditiveShader] {this} {Info}");
+            SetVisible(Info.AlwaysOn);
         }
 
         /// <summary>
@@ -108,6 +97,11 @@ namespace AdditiveShader.Manager
         /// <para>Use <see cref="Show()"/>, <see cref="Hide()"/> or <see cref="SetVisible(bool)"/> to change visibility.</para>
         /// </summary>
         public bool IsVisible { get; private set; }
+
+        /// <summary>
+        /// Gets a value containing shader parameters which were parsed from the mesh name.
+        /// </summary>
+        public ShaderInfo Info { get; }
 
         /// <summary>
         /// <para>Gets a value indicating what type of asset this instance represents.</para>
@@ -121,32 +115,27 @@ namespace AdditiveShader.Manager
         /// </list>
         /// </para>
         /// </summary>
-        public AssetType TypeOfAsset { get; }
+        private AssetType TypeOfAsset { get; }
 
         /// <summary>
         /// Gets the <see cref="PropInfo"/> associated with this instance, if applicable.
         /// </summary>
-        public PropInfo Prop { get; }
+        private PropInfo Prop { get; }
 
         /// <summary>
         /// Gets the <see cref="BuildingInfo"/> associated with this instance, if applicable.
         /// </summary>
-        public BuildingInfo Building { get; }
+        private BuildingInfo Building { get; }
 
         /// <summary>
         /// Gets the <see cref="BuildingInfoSub"/> associated with this instance, if applicalbe.
         /// </summary>
-        public BuildingInfoSub SubBuilding { get; }
+        private BuildingInfoSub SubBuilding { get; }
 
         /// <summary>
         /// Gets the <see cref="VehicleInfoSub"/> associated with this instance, if applicable.
         /// </summary>
-        public VehicleInfoSub Vehicle { get; }
-
-        /// <summary>
-        /// Gets a value containing shader parameters which were parsed from the mesh name.
-        /// </summary>
-        public ShaderInfo Info { get; }
+        private VehicleInfoSub Vehicle { get; }
 
         /// <inheritdoc/>
         public override string ToString() => TypeOfAsset switch
@@ -172,42 +161,38 @@ namespace AdditiveShader.Manager
         /// <summary>
         /// Show or hide the additive shader for this asset.
         /// </summary>
-        /// <param name="visibility">If <c>true</c>, the shader will be shown, otherwise it will be hidden.</param>
-        public void SetVisible(bool visibility)
+        /// <param name="visible">If <c>true</c>, the shader will be shown, otherwise it will be hidden.</param>
+        public void SetVisible(bool visible)
         {
-            if (IsVisible == visibility)
+            if (IsVisible == visible)
                 return;
 
-            IsVisible = visibility;
+            IsVisible = visible;
 
             switch (TypeOfAsset)
             {
                 case AssetType.Prop:
-                    SetVisible(Prop, visibility);
+                    Prop.m_material.SetFloat("_Intensity", visible ? Info.Intensity : 0f);
                     break;
                 case AssetType.Building:
-                    SetVisible(Building, visibility);
+                    Building.m_material.SetFloat("_Intensity", visible ? Info.Intensity : 0f);
                     break;
                 case AssetType.SubBuilding:
-                    SetVisible(SubBuilding, visibility);
+                    SubBuilding.m_material.SetFloat("_Intensity", visible ? Info.Intensity : 0f);
                     break;
                 case AssetType.Vehicle:
-                    SetVisible(Vehicle, visibility);
+                    Vehicle.m_material.SetFloat("_Intensity", visible ? Info.Intensity : 0f);
                     break;
             }
         }
 
-        private void SetVisible(PropInfo info, bool visible) =>
-            info.m_material.SetFloat("_Intensity", visible ? Info.Intensity : 0f);
-
-        private void SetVisible(BuildingInfo info, bool visible) =>
-            info.m_material.SetFloat("_Intensity", visible ? Info.Intensity : 0f);
-
-        private void SetVisible(BuildingInfoSub info, bool visible) =>
-            info.m_material.SetFloat("_Intensity", visible ? Info.Intensity : 0f);
-
-        private void SetVisible(VehicleInfoSub info, bool visible) =>
-            info.m_material.SetFloat("_Intensity", visible ? Info.Intensity : 0f);
+        /// <summary>
+        /// Check if a tag is defined. Case sensitive. Tags should always be lower case.
+        /// </summary>
+        /// <param name="tag">The tag to check.</param>
+        /// <returns>Returns <c>true</c> if tag found, otherwise <c>false</c>.</returns>
+        public bool HasTag(string tag) =>
+            Info.HasTag(tag);
 
         /// <summary>
         /// Returns an array filled with <see cref="Color.white"/>.

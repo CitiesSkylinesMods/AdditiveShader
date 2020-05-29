@@ -10,3 +10,4 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1503:Braces should not be omitted")]
 [assembly: SuppressMessage("StyleCop.CSharp.SpacingRules", "SA1025:Code should not contain multiple whitespace in a row")]
 [assembly: SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1633:File should have header")]
+[assembly: SuppressMessage("Style", "RCS1001:Add braces (when expression spans over multiple lines).")]
