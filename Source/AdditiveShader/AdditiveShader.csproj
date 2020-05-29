@@ -32,15 +32,7 @@
     <Reference Include="Assembly-CSharp" />
     <Reference Include="ColossalManaged" />
     <Reference Include="ICities" />
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
-    <Reference Include="System.Configuration" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Security" />
-    <Reference Include="System.Xml" />
     <Reference Include="UnityEngine" />
-    <Reference Include="UnityEngine.Networking" />
-    <Reference Include="UnityEngine.UI" />
   </ItemGroup>
 
   <!-- Build target -->
