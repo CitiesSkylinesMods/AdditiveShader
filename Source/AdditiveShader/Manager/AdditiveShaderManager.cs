@@ -103,6 +103,7 @@ namespace AdditiveShader.Manager
 
             float time = Singleton<SimulationManager>.instance.m_currentDayTimeHour;
 
+            // when thinking about this remember mods like "Time Warp"
             shader.SetVisible(
                 shader.Info.OverlapsMidnight
                     ? time < shader.Info.OffTime || shader.Info.OnTime <= time
