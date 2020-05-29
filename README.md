@@ -17,7 +17,9 @@ Where:
 * **Fade** -- controls amount of shader fading near other objects
 * **Intensity** -- controls the light intensity of the shader
 
-Use [these scripts](https://gist.github.com/ronyx69/97a8efae47d6828f01d7d0ab8189fd73) in [Mod Tools](https://steamcommunity.com/sharedfiles/filedetails/?id=450877484) console (`F7`) to apply valid names to your meshes. See [CSL Modding - Additive Shader](https://cslmodding.info/mod/additive-shader/) for details of how to create the assets.
+Use [these scripts](https://gist.github.com/ronyx69/97a8efae47d6828f01d7d0ab8189fd73) in [Mod Tools](https://steamcommunity.com/sharedfiles/filedetails/?id=450877484) console (`F7`) to apply valid names to your meshes.
+
+See [CSL Modding - Additive Shader](https://cslmodding.info/mod/additive-shader/) for details of how to create the assets.
 
 ### Example:
 
