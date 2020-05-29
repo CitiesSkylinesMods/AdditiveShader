@@ -47,7 +47,6 @@ namespace AdditiveShader.Manager
         /// Collates list of assets that use the additive shader.
         /// </summary>
         [UsedImplicitly]
-        [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
         public void Start()
         {
             // prevent Update() until we finish Start()
@@ -118,6 +117,10 @@ namespace AdditiveShader.Manager
         private static bool HasShaderToken(string meshName) =>
             !string.IsNullOrEmpty(meshName) && meshName.Contains(TOKEN);
 
+        /// <summary>
+        /// Initialises asset report.
+        /// </summary>
+        /// <returns>Returns the report StringBuilder.</returns>
         private static StringBuilder StartReport()
         {
             var report = new StringBuilder(2048);
@@ -129,6 +132,11 @@ namespace AdditiveShader.Manager
             return report;
         }
 
+        /// <summary>
+        /// Adds details of an asset to the report.
+        /// </summary>
+        /// <param name="shader">The shader-using asset.</param>
+        /// <param name="report">The report to append.</param>
         private static void AddToReport(ShaderAsset shader, StringBuilder report) =>
             report
                 .Append(shader).AppendLine(":")
@@ -139,6 +147,11 @@ namespace AdditiveShader.Manager
                 .Append(", OverlapsMidnight: ").Append(shader.Info.OverlapsMidnight)
                 .AppendLine();
 
+        /// <summary>
+        /// Finsihes the report and logs to game log.
+        /// </summary>
+        /// <param name="count">Total number of shader-usuing assets.</param>
+        /// <param name="report">The report to append.</param>
         private static void FinishReport(int count, StringBuilder report)
         {
             report
