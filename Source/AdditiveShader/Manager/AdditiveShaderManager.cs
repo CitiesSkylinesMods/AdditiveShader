@@ -50,41 +50,32 @@ namespace AdditiveShader.Manager
         [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
         public void Start()
         {
-            var report = new StringBuilder(2048);
+            // prevent Update() until we finish Start()
+            enabled = false;
 
-            report
-                .AppendLine("[AdditiveShader] Assets using shader:")
-                .AppendLine();
+            // collate all the shader-using assets in temporary list
+            var assets = new List<ShaderAsset>();
 
-            var tempList = new List<ShaderAsset>();
+            Add_Props(assets);
+            Add_Buildings(assets);
+            Add_SubBuildings(assets);
+            Add_Vehicles(assets);
 
+            // we'll split them in to two groups - static vs. dynamic
             staticShaders = new List<ShaderAsset>();
-            dynamicShaders = new List<ShaderAsset>();
+            dynamicShaders = new List<ShaderAsset>(); // visibility based on game time
 
-            Add_Props(tempList);
-            Add_Buildings(tempList);
-            Add_SubBuildings(tempList);
-            Add_Vehicles(tempList);
+            var report = StartReport();
 
-            foreach (var shader in tempList)
+            foreach (var shader in assets)
             {
-                report
-                    .Append(shader).AppendLine(":")
-                    .Append(" - ").Append(shader.Info)
-                    .AppendLine()
-                    .Append(" - AlwaysOn: ").Append(shader.Info.AlwaysOn)
-                    .Append(", Static: ").Append(shader.Info.Static)
-                    .Append(", OverlapsMidnight: ").Append(shader.Info.OverlapsMidnight)
-                    .AppendLine();
-
+                // filter into relevant list
                 (shader.Info.Static ? staticShaders : dynamicShaders).Add(shader);
+
+                AddToReport(shader, report);
             }
 
-            report
-                .AppendLine()
-                .Append("Found ").Append(tempList.Count).Append(" assets");
-
-            Debug.Log(report.ToString());
+            FinishReport(assets.Count, report);
 
             staticShaders.TrimExcess();
             dynamicShaders.TrimExcess();
@@ -104,7 +95,7 @@ namespace AdditiveShader.Manager
         public void Update()
         {
             if (flipflop = !flipflop)
-                return;
+                return; // skip every other frame
 
             if (++index >= count)
                 index = 0;
@@ -126,6 +117,36 @@ namespace AdditiveShader.Manager
         /// <returns>Returns <c>true</c> if the token is found, otherwise <c>false</c>.</returns>
         private static bool HasShaderToken(string meshName) =>
             !string.IsNullOrEmpty(meshName) && meshName.Contains(TOKEN);
+
+        private static StringBuilder StartReport()
+        {
+            var report = new StringBuilder(2048);
+
+            report
+                .AppendLine("[AdditiveShader] Assets using shader:")
+                .AppendLine();
+
+            return report;
+        }
+
+        private static void AddToReport(ShaderAsset shader, StringBuilder report) =>
+            report
+                .Append(shader).AppendLine(":")
+                .Append(" - ").Append(shader.Info)
+                .AppendLine()
+                .Append(" - AlwaysOn: ").Append(shader.Info.AlwaysOn)
+                .Append(", Static: ").Append(shader.Info.Static)
+                .Append(", OverlapsMidnight: ").Append(shader.Info.OverlapsMidnight)
+                .AppendLine();
+
+        private static void FinishReport(int count, StringBuilder report)
+        {
+            report
+                .AppendLine()
+                .Append("Found ").Append(count).Append(" assets");
+
+            Debug.Log(report.ToString());
+        }
 
         /// <summary>
         /// Scans prop assets, adding any using the shader to the list.
