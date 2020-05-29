@@ -36,10 +36,24 @@ That results in:
 
 ### On/Off times
 
+On/off times control visibility of shaders based on _game day_ time:
+
+* If **On** is later than **Off**, the shader will remain visible across the midnight boundary
+   * It will turn on at **On** time, and remain on until the following day
+   * On that following day, it will eventually turn off, at **Off time**
+   * Rinse, wash, repeat.
 * Times are based on 24 hour clock, so `2` would be 2 AM (02:00), `13` would be 1 PM (13:00), etc.
 * A value of `0.1` is 6 minutes. So `13.2` would be 1:12 PM (13:12), `13.25` would be 1:15 PM (13:15), etc.
-* If **On** is later than **Off**, the shader will remain visible across the midnight boundary
-    * It will turn off, _the next day_, at **Off** time, and then later that day turn on again, at **On** time
+
+To minimise CPU workload, only one _dynamic_ (time-based visibility) shader-using asset will be updated per 2 frames:
+
+* Lower framerate (fps) means longer wait for next item in the list
+* More items in the list means longer time to process whole list
+
+If you have 20 fps in-game, and 40 time-based shader-using assets, it will take 4 real-life seconds for them all to be refreshed.
+
+Static shaders (alwyas on/off) are handled separately, outside of the Update() loop:
+
 * If **On** is same as **Off**, the shader will be "always on" (always shown)
 * Likewise, if **On** is `0` _and_ **Off** is `24`, the shader will be "always on".
 * If **On** is negative (eg. `-1`), the shader will be "always off" (that's for a planned future feature)
