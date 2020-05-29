@@ -17,7 +17,7 @@ Where:
 * **Fade** -- controls amount of shader fading near other objects
 * **Intensity** -- controls the light intensity of the shader
 
-Use [these scripts](https://gist.github.com/ronyx69/97a8efae47d6828f01d7d0ab8189fd73) in [Mod Tools](https://steamcommunity.com/sharedfiles/filedetails/?id=450877484) console (`F7`) to apply valid names to your meshes.
+Use [these scripts](https://gist.github.com/ronyx69/97a8efae47d6828f01d7d0ab8189fd73) in [Mod Tools](https://steamcommunity.com/sharedfiles/filedetails/?id=450877484) console (`F7`) to apply valid names to your meshes. See [CSL Modding - Additive Shader](https://cslmodding.info/mod/additive-shader/) for details of how to create the assets.
 
 ### Example:
 
@@ -31,8 +31,6 @@ That results in:
 * Off at `6 AM` (`06:00`) _the following day_ (because On is after Off)
 * Fade of `20`
 * Light intensity of `2`
-
-See [CSL Modding - Additive Shader](https://cslmodding.info/mod/additive-shader/) for details of how to create the assets.
 
 ### On/Off times
 
