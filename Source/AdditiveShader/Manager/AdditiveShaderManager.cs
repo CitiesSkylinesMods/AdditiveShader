@@ -47,7 +47,7 @@ namespace AdditiveShader.Manager
         /// Collates list of assets that use the additive shader.
         /// </summary>
         [UsedImplicitly]
-        public void Start()
+        protected void Start()
         {
             // prevent Update() until we finish Start()
             enabled = false;
@@ -91,7 +91,7 @@ namespace AdditiveShader.Manager
         /// <para>PERFORMANCE CRITICAL.</para>
         /// </summary>
         [UsedImplicitly]
-        public void Update()
+        protected void Update()
         {
             if (flipflop = !flipflop)
                 return; // skip every other frame
