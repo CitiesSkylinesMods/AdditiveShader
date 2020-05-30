@@ -1,6 +1,7 @@
 namespace AdditiveShader.Manager
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using UnityEngine;
 
     /// <summary>
@@ -15,6 +16,7 @@ namespace AdditiveShader.Manager
         /// </summary>
         /// <param name="asset">The <see cref="PropInfo"/> which uses the shader.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="asset"/> is <c>null</c>.</exception>
+        [SuppressMessage("Maintainability", "AV1522:Assign each property, field, parameter or variable in a separate statement", Justification = "Intentional.")]
         public ShaderAsset(PropInfo asset)
         {
             TypeOfAsset = AssetType.Prop;
@@ -26,7 +28,7 @@ namespace AdditiveShader.Manager
             asset.m_material.SetFloat("_InvFade", Info.Fade);
             asset.m_lodRenderDistance = asset.m_maxRenderDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
 
-            SetVisible(Info.AlwaysOn);
+            SetVisible(Info.IsAlwaysOn);
         }
 
         /// <summary>
@@ -35,6 +37,7 @@ namespace AdditiveShader.Manager
         /// </summary>
         /// <param name="asset">The <see cref="BuildingInfo"/> which uses the shader.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="asset"/> is <c>null</c>.</exception>
+        [SuppressMessage("Maintainability", "AV1522:Assign each property, field, parameter or variable in a separate statement", Justification = "Intentional.")]
         public ShaderAsset(BuildingInfo asset)
         {
             TypeOfAsset = AssetType.Building;
@@ -48,7 +51,7 @@ namespace AdditiveShader.Manager
             asset.m_mesh.colors = GetMeshColors(asset.m_mesh.vertices.Length);
             asset.m_maxLodDistance = asset.m_minLodDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
 
-            SetVisible(Info.AlwaysOn);
+            SetVisible(Info.IsAlwaysOn);
         }
 
         /// <summary>
@@ -57,6 +60,7 @@ namespace AdditiveShader.Manager
         /// </summary>
         /// <param name="asset">The <see cref="BuildingInfoSub"/> which uses the shader.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="asset"/> is <c>null</c>.</exception>
+        [SuppressMessage("Maintainability", "AV1522:Assign each property, field, parameter or variable in a separate statement", Justification = "Intentional.")]
         public ShaderAsset(BuildingInfoSub asset)
         {
             TypeOfAsset = AssetType.SubBuilding;
@@ -69,7 +73,7 @@ namespace AdditiveShader.Manager
             asset.m_mesh.colors = GetMeshColors(asset.m_mesh.vertices.Length);
             asset.m_maxLodDistance = asset.m_minLodDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
 
-            SetVisible(Info.AlwaysOn);
+            SetVisible(Info.IsAlwaysOn);
         }
 
         /// <summary>
@@ -78,6 +82,7 @@ namespace AdditiveShader.Manager
         /// </summary>
         /// <param name="asset">The <see cref="VehicleInfoSub"/> which uses the shader.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="asset"/> is <c>null</c>.</exception>
+        [SuppressMessage("Maintainability", "AV1522:Assign each property, field, parameter or variable in a separate statement", Justification = "Intentional.")]
         public ShaderAsset(VehicleInfoSub asset)
         {
             TypeOfAsset = AssetType.Vehicle;
@@ -89,7 +94,7 @@ namespace AdditiveShader.Manager
             asset.m_mesh.colors = GetMeshColors(asset.m_mesh.vertices.Length);
             asset.m_lodRenderDistance = asset.m_maxRenderDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
 
-            SetVisible(Info.AlwaysOn);
+            SetVisible(Info.IsAlwaysOn);
         }
 
         /// <summary>
@@ -159,9 +164,21 @@ namespace AdditiveShader.Manager
         public void Hide() => SetVisible(false);
 
         /// <summary>
+        /// Show or hide the additive shader for this asset based on game world time.
+        /// </summary>
+        /// <param name="time">The game time of day.</param>
+        public void SetVisible(float time) =>
+            SetVisible(
+                Info.OverlapsMidnight
+                    ? time < Info.OffTime || Info.OnTime <= time
+                    : Info.OnTime <= time && time < Info.OffTime);
+
+        /// <summary>
         /// Show or hide the additive shader for this asset.
         /// </summary>
         /// <param name="visible">If <c>true</c>, the shader will be shown, otherwise it will be hidden.</param>
+        [SuppressMessage("Maintainability", "AV1536:Non-exhaustive switch statement requires a default case clause")]
+        [SuppressMessage("Maintainability", "AV1535:Missing block in case or default clause of switch statement")]
         public void SetVisible(bool visible)
         {
             if (IsVisible == visible)
@@ -199,12 +216,13 @@ namespace AdditiveShader.Manager
         /// </summary>
         /// <param name="count">The size of the array (number of mesh vertices).</param>
         /// <returns>An array of specified size filled with white color.</returns>
+        [SuppressMessage("Member Design", "AV1130:Return type in method signature should be a collection interface instead of a concrete type", Justification = "Game requirement.")]
         private Color[] GetMeshColors(int count)
         {
             var colors = new Color[count];
 
-            for (int i = 0; i < count; i++)
-                colors[i] = Color.white;
+            for (int index = 0; index < count; index++)
+                colors[index] = Color.white;
 
             return colors;
         }

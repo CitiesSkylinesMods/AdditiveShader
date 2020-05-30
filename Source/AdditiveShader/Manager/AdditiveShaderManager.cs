@@ -1,16 +1,9 @@
 namespace AdditiveShader.Manager
 {
-    using System;
     using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Text;
     using ColossalFramework;
     using JetBrains.Annotations;
     using UnityEngine;
-
-    // TODO: As this is exposed via a game object, maybe provide some way for
-    // other mods to define default on/off time (day/night transition time).
-    // Eg. Real Time mod that changes sunrise/sunset.
 
     /// <summary>
     /// <para>Attached to a game object, this manager will perform the following tasks:
@@ -23,67 +16,70 @@ namespace AdditiveShader.Manager
     public class AdditiveShaderManager : MonoBehaviour
     {
         /// <summary>
-        /// If a mesh name contains this token, it uses the additive shader.
-        /// </summary>
-        public const string TOKEN = "AdditiveShader";
-
-        /// <summary>
-        /// A list of shader assets that are static.
+        /// A list of shader assets that are static (always on/off).
         /// </summary>
         private List<ShaderAsset> staticShaders;
 
         /// <summary>
-        /// A list of shader assets that are dynamic (time-based).
+        /// A list of shader assets that turn on at dusk, off at dawn.
         /// </summary>
-        private List<ShaderAsset> dynamicShaders;
+        private List<ShaderAsset> twilightShaders;
 
-        private bool flipflop;
+        /// <summary>
+        /// A list of other (non-twilight) time-based shader assets.
+        /// </summary>
+        private List<ShaderAsset> generalShaders;
 
+        /// <summary>
+        /// Used to spot twilight transitions.
+        /// </summary>
+        private bool isNightTime;
+
+        /// <summary>
+        /// <para>Indicates the active list for <see cref="Update()"/>.</para>
+        /// <list type="bullet">
+        /// <item><c>true</c> -- <see cref="twilightShaders"/></item>
+        /// <item><c>false</c> -- <see cref="generalShaders"/></item>
+        /// </list>
+        /// </summary>
+        private bool iterateTwilight;
+
+        /// <summary>
+        /// Current item index in active list.
+        /// </summary>
         private int index;
 
+        /// <summary>
+        /// Number of items in the active list.
+        /// </summary>
         private int count;
 
         /// <summary>
-        /// Collates list of assets that use the additive shader.
+        /// Collates list of assets that use the additive shader, sorts them in to lists.
         /// </summary>
         [UsedImplicitly]
         protected void Start()
         {
-            // prevent Update() until we finish Start()
             enabled = false;
 
-            // collate all the shader-using assets in temporary list
-            var assets = new List<ShaderAsset>();
+            var report    = new AssetReporter();
+            var assetList = AssetScanner.ListShaderAssets();
 
-            Add_Props(assets);
-            Add_Buildings(assets);
-            Add_SubBuildings(assets);
-            Add_Vehicles(assets);
+            InitialiseShaderLists(assetList.Count);
 
-            // we'll split them in to two groups - static vs. dynamic
-            staticShaders = new List<ShaderAsset>();
-            dynamicShaders = new List<ShaderAsset>(); // visibility based on game time
-
-            var report = StartReport();
-
-            foreach (var shader in assets)
+            foreach (var shader in assetList)
             {
-                // filter into relevant list
-                (shader.Info.Static ? staticShaders : dynamicShaders).Add(shader);
+                (shader.Info.IsStatic ? staticShaders : shader.Info.IsTwilight ? twilightShaders : generalShaders).Add(shader);
 
-                AddToReport(shader, report);
+                report.Append(shader);
             }
 
-            FinishReport(assets.Count, report);
+            TrimExcessCapacity();
 
-            staticShaders.TrimExcess();
-            dynamicShaders.TrimExcess();
+            report.Summary(assetList.Count, twilightShaders.Count, generalShaders.Count);
+            report.PublishToLogFile();
 
-            index = -1;
-            count = dynamicShaders.Count;
-
-            // if dynamicShaders list is empty, disable Update() completely
-            enabled = count > 0;
+            enabled = (twilightShaders.Count != 0 || generalShaders.Count != 0) && IsReadyForNextUpdate();
         }
 
         /// <summary>
@@ -93,160 +89,80 @@ namespace AdditiveShader.Manager
         [UsedImplicitly]
         protected void Update()
         {
-            if (flipflop = !flipflop)
-                return; // skip every other frame
+            if (++index >= count && !IsReadyForNextUpdate())
+                return;
 
-            if (++index >= count)
-                index = 0;
-
-            var shader = dynamicShaders[index];
-
-            float time = Singleton<SimulationManager>.instance.m_currentDayTimeHour;
-
-            // when thinking about this remember mods like "Time Warp"
-            shader.SetVisible(
-                shader.Info.OverlapsMidnight
-                    ? time < shader.Info.OffTime || shader.Info.OnTime <= time
-                    : shader.Info.OnTime <= time && time < shader.Info.OffTime);
+            if (iterateTwilight)
+            {
+                twilightShaders[index].SetVisible(isNightTime);
+            }
+            else
+            {
+                generalShaders[index].SetVisible(Singleton<SimulationManager>.instance.m_currentDayTimeHour);
+            }
         }
 
         /// <summary>
-        /// Check if a mesh name contains the additive shader token.
+        /// Resumes <see cref="Update()"/> cycle after being paused.
         /// </summary>
-        /// <param name="meshName">The <c>m_mesh.name</c> to investigate.</param>
-        /// <returns>Returns <c>true</c> if the token is found, otherwise <c>false</c>.</returns>
-        private static bool HasShaderToken(string meshName) =>
-            !string.IsNullOrEmpty(meshName) && meshName.Contains(TOKEN);
+        /// <returns>Returns <c>true</c>.</returns>
+        protected bool ResumeUpdates() => enabled = true;
 
         /// <summary>
-        /// Initialises asset report.
+        /// If the active list is empty, pause updates for a short time before trying again.
         /// </summary>
-        /// <returns>Returns the report StringBuilder.</returns>
-        private static StringBuilder StartReport()
+        /// <returns>Returns <c>false</c>.</returns>
+        private bool PauseUpdates()
         {
-            var report = new StringBuilder(2048);
-
-            report
-                .AppendLine("[AdditiveShader] Assets using shader:")
-                .AppendLine();
-
-            return report;
+            Invoke("ResumeUpdates", iterateTwilight ? 1.0f : 5.0f);
+            return enabled = false;
         }
 
         /// <summary>
-        /// Adds details of an asset to the report.
+        /// Determines active list to use for <see cref="Update()"/>:
+        /// <list type="bullet">
+        /// <item><see cref="twilightShaders"/> - if we just transitioned twilight</item>
+        /// <item><see cref="generalShaders"/> - at all other times</item>
+        /// </list>
         /// </summary>
-        /// <param name="shader">The shader-using asset.</param>
-        /// <param name="report">The report to append.</param>
-        private static void AddToReport(ShaderAsset shader, StringBuilder report) =>
-            report
-                .Append(shader).AppendLine(":")
-                .Append(" - ").Append(shader.Info)
-                .AppendLine()
-                .Append(" - AlwaysOn: ").Append(shader.Info.AlwaysOn)
-                .Append(", Static: ").Append(shader.Info.Static)
-                .Append(", OverlapsMidnight: ").Append(shader.Info.OverlapsMidnight)
-                .AppendLine();
-
-        /// <summary>
-        /// Finsihes the report and logs to game log.
-        /// </summary>
-        /// <param name="count">Total number of shader-usuing assets.</param>
-        /// <param name="report">The report to append.</param>
-        private static void FinishReport(int count, StringBuilder report)
+        /// <returns>Returns <c>true</c> if ready for next update, otherwise <c>false</c>.</returns>
+        private bool IsReadyForNextUpdate()
         {
-            report
-                .AppendLine()
-                .Append("Found ").Append(count).Append(" assets");
+            if (iterateTwilight = Singleton<SimulationManager>.instance.m_isNightTime != isNightTime)
+                isNightTime = !isNightTime;
 
-            Debug.Log(report.ToString());
+            index = -1;
+            count = (iterateTwilight ? twilightShaders : generalShaders).Count;
+
+            return count == 0
+                ? PauseUpdates()
+                : ResumeUpdates();
         }
 
         /// <summary>
-        /// Scans prop assets, adding any using the shader to the list.
+        /// Initialises shader lists:
+        /// <list type="bullet">
+        /// <item><see cref="staticShaders"/> -- always on/off</item>
+        /// <item><see cref="twilightShaders"/> -- on at dusk, off at dawn</item>
+        /// <item><see cref="generalShaders"/> -- other time-based on/off</item>
+        /// </list>
         /// </summary>
-        [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
-        private static void Add_Props(List<ShaderAsset> list)
+        /// <param name="capacity">The initial capacity for the lists.</param>
+        private void InitialiseShaderLists(int capacity)
         {
-            foreach (var prop in Resources.FindObjectsOfTypeAll<PropInfo>())
-                try
-                {
-                    if (HasShaderToken(prop?.m_mesh?.name))
-                        list.Add(new ShaderAsset(prop));
-                }
-                catch (Exception e)
-                {
-                    Debug.LogError($"[AdditiveShader] PropInfo error: {prop?.name}\n{e}");
-                }
+            staticShaders = new List<ShaderAsset>(capacity);
+            twilightShaders = new List<ShaderAsset>(capacity);
+            generalShaders = new List<ShaderAsset>(capacity);
         }
 
         /// <summary>
-        /// <para>Scans building assets, adding any using the shader to the list.</para>
-        /// <para>
-        /// Also checks the building props; if any use the shader the building
-        /// prop distance is greatly increased to keep them visible longer (that's
-        /// required _in addition_ to setting the distance on the props themselves).
-        /// </para>
+        /// Trims excess capacity from populated lists.
         /// </summary>
-        [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
-        private static void Add_Buildings(List<ShaderAsset> list)
+        private void TrimExcessCapacity()
         {
-            foreach (var building in Resources.FindObjectsOfTypeAll<BuildingInfo>())
-                try
-                {
-                    if (HasShaderToken(building?.m_mesh?.name))
-                        list.Add(new ShaderAsset(building));
-
-                    if (building?.m_props == null || building.m_props.Length == 0)
-                        continue;
-
-                    for (uint i = 0; i < building.m_props.Length; i++)
-                        if (HasShaderToken(building.m_props[i].m_finalProp?.m_mesh?.name))
-                        {
-                            building.m_maxPropDistance = 25000;
-                            break;
-                        }
-                }
-                catch (Exception e)
-                {
-                    Debug.LogError($"[AdditiveShader] BuildingInfo error: {building?.name}\n{e}");
-                }
+            staticShaders.TrimExcess();
+            twilightShaders.TrimExcess();
+            generalShaders.TrimExcess();
         }
-
-        /// <summary>
-        /// Scans sub building assets, adding any using the shader to the list.
-        /// </summary>
-        [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
-        private static void Add_SubBuildings(List<ShaderAsset> list)
-        {
-            foreach (var subBuilding in Resources.FindObjectsOfTypeAll<BuildingInfoSub>())
-                try
-                {
-                    if (HasShaderToken(subBuilding?.m_mesh?.name))
-                        list.Add(new ShaderAsset(subBuilding));
-                }
-                catch (Exception e)
-                {
-                    Debug.LogError($"[AdditiveShader] BuildingInfoSub error: {subBuilding?.name}\n{e}");
-                }
-        }
-
-        /// <summary>
-        /// Scans vehicle assets, adding any using the shader to the list.
-        /// </summary>
-        [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
-        private static void Add_Vehicles(List<ShaderAsset> list)
-        {
-            foreach (var vehicle in Resources.FindObjectsOfTypeAll<VehicleInfoSub>())
-                try
-                {
-                    if (HasShaderToken(vehicle?.m_mesh?.name))
-                        list.Add(new ShaderAsset(vehicle));
-                }
-                catch (Exception e)
-                {
-                    Debug.LogError($"[AdditiveShader] VehicleInfoSub error: {vehicle?.name}\n{e}");
-                }
-        }
-    }
+     }
 }

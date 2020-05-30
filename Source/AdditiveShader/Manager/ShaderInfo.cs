@@ -1,7 +1,6 @@
 namespace AdditiveShader.Manager
 {
     using System;
-    using System.Collections;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
 
@@ -17,10 +16,24 @@ namespace AdditiveShader.Manager
     {
         // Indexes of the parameters stored in tags array
         // Note: Tag 0 is always "AdditiveShader"
-        private const int TIME_ON = 1;
-        private const int TIME_OFF = 2;
-        private const int FADE = 3;
+        private const int TIME_ON   = 1;
+        private const int TIME_OFF  = 2;
+        private const int FADE      = 3;
         private const int INTENSITY = 4;
+
+        // Hard-coded values derived from SimulationManager's `SUNRISE_HOUR` and `SUNSET_HOUR` members.
+        // This is done because mods such as Real Time can alter those vanilla values. We need the
+        // vanilla values as that's what most asset authors base their shader on/off times on.
+        private const float SUNRISE = 5f;
+        private const float SUNSET = 20f;
+
+        // A 1-hour boundary around the sunrise/sunset times. This is because asset authors tend to use
+        // +/- 1 hour (of sunrise/sunset) for their on/off times. We can bucket all the 'all nighter'
+        // shader assets and spread them around the day/night transitions.
+        private const float SUNRISE_START = SUNRISE - 1.1f;
+        private const float SUNRISE_END   = SUNRISE + 1.1f;
+        private const float SUNSET_START  = SUNSET  - 1.1f;
+        private const float SUNSET_END    = SUNSET  + 1.1f;
 
         /// <summary>
         /// Delimiter used for splitting the mesh name in to raw parameter array.
@@ -63,16 +76,18 @@ namespace AdditiveShader.Manager
                 Fade      = float.Parse(tags[FADE     ]);
                 Intensity = float.Parse(tags[INTENSITY]);
             }
-            catch (Exception e)
+            catch (Exception error)
             {
-                throw new FormatException("Invalid mesh name format", e);
+                throw new FormatException($"Invalid mesh name format: {meshName}", error);
             }
 
-            AlwaysOn = OnTime == OffTime && OnTime >= 0f || OnTime == 0f && OffTime == 24f;
+            IsAlwaysOn = OnTime == OffTime && OnTime >= 0f || OnTime == 0f && OffTime == 24f;
 
-            Static = AlwaysOn || OnTime < 0f; // -1 denotes always off (manual control, eg. via other mods)
+            IsStatic = IsAlwaysOn || OnTime < 0f; // -1 denotes always off (manual control, eg. via other mods)
 
             OverlapsMidnight = OnTime > OffTime;
+
+            IsTwilight = OverlapsMidnight && TransitionsAtTwilight();
         }
 
         /// <summary>
@@ -91,14 +106,27 @@ namespace AdditiveShader.Manager
         public bool OverlapsMidnight { get; }
 
         /// <summary>
+        /// <para>Gets a value indicating whether the shader turns on at dusk and off at dawn.</para>
+        /// <para>
+        /// In this situation, the shader is moved to a different list to allow batch toggling
+        /// when day transitions to night and vice versa.
+        /// </para>
+        /// <para>
+        /// As an added advantage, this also makes the shader synchronise with variable day
+        /// lengths (and thus sun set/rise times) associated with the Real Time mod by dymanoid.
+        /// </para>
+        /// </summary>
+        public bool IsTwilight { get; }
+
+        /// <summary>
         /// Gets a value indicating whether the OnTime == OffTime (ie. the shader is always visible).
         /// </summary>
-        public bool AlwaysOn { get; }
+        public bool IsAlwaysOn { get; }
 
         /// <summary>
         /// Gets a value indicating whether the shader is static (always on, or always off).
         /// </summary>
-        public bool Static { get; }
+        public bool IsStatic { get; }
 
         /// <summary>
         /// <para>Gets a value which controls fading of the additive shader.</para>
@@ -132,5 +160,20 @@ namespace AdditiveShader.Manager
         /// <inheritdoc/>
         public override string ToString() =>
             $"ShaderInfo('{name}')";
+
+        /// <summary>
+        /// Given that the shader <see cref="OverlapsMidnight"/>, this does additional
+        /// checks to see if the shader appears to be turning on at sunset and off at
+        /// sunrise (based on vanilla times for those events).
+        /// </summary>
+        /// <param name="onTime">The time the shader wants to turn on.</param>
+        /// <param name="offTime">The time the shader wants to turn off.</param>
+        /// <param name="tags">The tags associated with the shader.</param>
+        /// <returns>Returns <c>true</c> if the shader is probably a nightlight, otherwise <c>false</c>.</returns>
+        [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1131:Use readable conditions", Justification = "Common pattern.")]
+        private bool TransitionsAtTwilight() =>
+            SUNRISE_START < OnTime && OnTime < SUNRISE_END &&
+            SUNSET_START < OffTime && OffTime < SUNSET_END &&
+            !tags.Contains("not-twilight");
     }
 }

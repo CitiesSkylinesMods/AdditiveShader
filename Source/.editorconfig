@@ -339,6 +339,9 @@ dotnet_naming_rule.parameters_rule.symbols              = parameters_group
 dotnet_naming_rule.parameters_rule.style                = camel_case_style
 dotnet_naming_rule.parameters_rule.severity             = warning
 
+# AV1008: Avoid static classes
+dotnet_diagnostic.AV1008.severity = suggestion
+
 # AV1210: Do not catch general exception types
 dotnet_diagnostic.AV1210.severity = none
 
