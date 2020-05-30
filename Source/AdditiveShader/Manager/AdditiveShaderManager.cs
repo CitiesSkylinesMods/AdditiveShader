@@ -1,6 +1,8 @@
 namespace AdditiveShader.Manager
 {
+    using System;
     using System.Collections.Generic;
+    using System.Text;
     using ColossalFramework;
     using JetBrains.Annotations;
     using UnityEngine;
@@ -47,7 +49,7 @@ namespace AdditiveShader.Manager
         /// <summary>
         /// Current item index in active list.
         /// </summary>
-        private int index;
+        private int index = int.MaxValue - 1;
 
         /// <summary>
         /// Number of items in the active list.
@@ -79,7 +81,7 @@ namespace AdditiveShader.Manager
             report.Summary(assetList.Count, twilightShaders.Count, generalShaders.Count);
             report.PublishToLogFile();
 
-            enabled = (twilightShaders.Count != 0 || generalShaders.Count != 0) && IsReadyForNextUpdate();
+            enabled = twilightShaders.Count != 0 || generalShaders.Count != 0;
         }
 
         /// <summary>
@@ -131,7 +133,7 @@ namespace AdditiveShader.Manager
             if (iterateTwilight = Singleton<SimulationManager>.instance.m_isNightTime != isNightTime)
                 isNightTime = !isNightTime;
 
-            index = -1;
+            index = 0;
             count = (iterateTwilight ? twilightShaders : generalShaders).Count;
 
             return count == 0
