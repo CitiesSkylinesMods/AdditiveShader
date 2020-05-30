@@ -339,6 +339,26 @@ dotnet_naming_rule.parameters_rule.symbols              = parameters_group
 dotnet_naming_rule.parameters_rule.style                = camel_case_style
 dotnet_naming_rule.parameters_rule.severity             = warning
 
+# AV1210: Do not catch general exception types
+dotnet_diagnostic.AV1210.severity = none
+
+# AV1130: Return an IEnumerable<T> or ICollection<T> instead of a concrete collection class
+dotnet_diagnostic.AV1130.severity = warning
+
+# AV1500: Methods should not exceed X statements
+dotnet_diagnostic.AV1500.max_statement_count = 12
+dotnet_diagnostic.AV1500.severity = suggestion
+
+# AV1561: Don't declare signatures with more than X parameters
+dotnet_diagnostic.AV1561.max_parameter_count = 5
+dotnet_diagnostic.AV1561.severity = suggestion
+
+# AV1564: Avoid signatures that take a bool parameter
+dotnet_diagnostic.AV1564.severity = none
+
+# AV2210: Build with the highest warning level
+# This doesn't want to turn off for some reason?
+dotnet_diagnostic.AV2210.severity = none
 
 # CA1031: Do not catch general exception types
 dotnet_diagnostic.CA1031.severity = none

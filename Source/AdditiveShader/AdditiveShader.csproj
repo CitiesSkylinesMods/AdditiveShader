@@ -25,6 +25,7 @@
     <PackageReference Include="Roslynator.Analyzers" Version="2.3.0"/>
     <PackageReference Include="Roslynator.CodeAnalysis.Analyzers" Version="1.0.0-beta"/>
     <PackageReference Include="StyleCop.Analyzers.Unstable" Version="1.2.0.164" />
+    <PackageReference Include="CSharpGuidelinesAnalyzer" Version="3.5.0" />
   </ItemGroup>
 
   <!-- Managed dll references -->
