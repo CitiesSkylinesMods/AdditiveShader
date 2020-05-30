@@ -46,12 +46,13 @@ namespace AdditiveShader.Manager
         /// Scans prop assets, adding any using the shader to the list.
         /// </summary>
         [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
+        [SuppressMessage("Correctness", "UNT0008:Null propagation on Unity objects", Justification = "m_mesh is not derived from MonoBehaviour")]
         private static void Add_Props(List<ShaderAsset> assetList)
         {
             foreach (var prop in Resources.FindObjectsOfTypeAll<PropInfo>())
                 try
                 {
-                    if (prop && HasShaderToken(prop.m_mesh.name))
+                    if (prop && HasShaderToken(prop.m_mesh?.name))
                         assetList.Add(new ShaderAsset(prop));
                 }
                 catch (Exception error)
@@ -64,6 +65,7 @@ namespace AdditiveShader.Manager
         /// Scans building assets, adding any using the shader to the list.
         /// </summary>
         [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
+        [SuppressMessage("Correctness", "UNT0008:Null propagation on Unity objects", Justification = "m_mesh is not derived from MonoBehaviour")]
         private static void Add_Buildings(List<ShaderAsset> assetList)
         {
             foreach (var building in Resources.FindObjectsOfTypeAll<BuildingInfo>())
@@ -71,7 +73,7 @@ namespace AdditiveShader.Manager
                 {
                     if (building)
                     {
-                        if (HasShaderToken(building.m_mesh.name))
+                        if (HasShaderToken(building.m_mesh?.name))
                             assetList.Add(new ShaderAsset(building));
 
                         if (building.m_props != null)
@@ -91,28 +93,28 @@ namespace AdditiveShader.Manager
         /// </summary>
         /// <param name="building">The <see cref="BuildingInfo"/> asset to scan.</param>
         [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
+        [SuppressMessage("Correctness", "UNT0008:Null propagation on Unity objects", Justification = "m_mesh is not derived from MonoBehaviour")]
         private static void CheckBuildingForShaderProps(BuildingInfo building)
         {
             foreach (var prop in building.m_props)
-            {
-                if (HasShaderToken(prop.m_finalProp.m_mesh.name))
+                if (prop.m_finalProp && HasShaderToken(prop.m_finalProp.m_mesh?.name))
                 {
                     building.m_maxPropDistance = 25000;
-                    break;
+                    return;
                 }
-            }
         }
 
         /// <summary>
         /// Scans sub building assets, adding any using the shader to the list.
         /// </summary>
         [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
+        [SuppressMessage("Correctness", "UNT0008:Null propagation on Unity objects", Justification = "m_mesh is not derived from MonoBehaviour")]
         private static void Add_SubBuildings(List<ShaderAsset> assetList)
         {
             foreach (var subBuilding in Resources.FindObjectsOfTypeAll<BuildingInfoSub>())
                 try
                 {
-                    if (subBuilding && HasShaderToken(subBuilding.m_mesh.name))
+                    if (subBuilding && HasShaderToken(subBuilding.m_mesh?.name))
                         assetList.Add(new ShaderAsset(subBuilding));
                 }
                 catch (Exception error)
@@ -125,12 +127,13 @@ namespace AdditiveShader.Manager
         /// Scans vehicle assets, adding any using the shader to the list.
         /// </summary>
         [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
+        [SuppressMessage("Correctness", "UNT0008:Null propagation on Unity objects", Justification = "m_mesh is not derived from MonoBehaviour")]
         private static void Add_Vehicles(List<ShaderAsset> assetList)
         {
             foreach (var vehicle in Resources.FindObjectsOfTypeAll<VehicleInfoSub>())
                 try
                 {
-                    if (vehicle && HasShaderToken(vehicle.m_mesh.name))
+                    if (vehicle && HasShaderToken(vehicle.m_mesh?.name))
                         assetList.Add(new ShaderAsset(vehicle));
                 }
                 catch (Exception error)
