@@ -36,6 +36,7 @@ namespace AdditiveShader.Manager
                 .Append(", Static: ").Append(shader.Info.IsStatic)
                 .Append(", OverlapsMidnight: ").Append(shader.Info.OverlapsMidnight)
                 .Append(", Twilight: ").Append(shader.Info.IsTwilight)
+                .AppendLine()
                 .AppendLine();
 
         /// <summary>
