@@ -17,10 +17,10 @@ namespace AdditiveShader.Manager
         /// <param name="asset">The <see cref="PropInfo"/> which uses the shader.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="asset"/> is <c>null</c>.</exception>
         [SuppressMessage("Maintainability", "AV1522:Assign each property, field, parameter or variable in a separate statement", Justification = "Intentional.")]
-        public ShaderAsset(PropInfo asset)
+        internal ShaderAsset(PropInfo asset)
         {
             TypeOfAsset = AssetType.Prop;
-            Prop = asset ?? throw new ArgumentNullException(nameof(asset));
+            Prop = asset;
 
             Info = new ShaderInfo(asset.m_mesh.name);
 
@@ -38,10 +38,10 @@ namespace AdditiveShader.Manager
         /// <param name="asset">The <see cref="BuildingInfo"/> which uses the shader.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="asset"/> is <c>null</c>.</exception>
         [SuppressMessage("Maintainability", "AV1522:Assign each property, field, parameter or variable in a separate statement", Justification = "Intentional.")]
-        public ShaderAsset(BuildingInfo asset)
+        internal ShaderAsset(BuildingInfo asset)
         {
             TypeOfAsset = AssetType.Building;
-            Building = asset ?? throw new ArgumentNullException(nameof(asset));
+            Building = asset;
 
             Info = new ShaderInfo(asset.m_mesh.name);
 
@@ -61,10 +61,10 @@ namespace AdditiveShader.Manager
         /// <param name="asset">The <see cref="BuildingInfoSub"/> which uses the shader.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="asset"/> is <c>null</c>.</exception>
         [SuppressMessage("Maintainability", "AV1522:Assign each property, field, parameter or variable in a separate statement", Justification = "Intentional.")]
-        public ShaderAsset(BuildingInfoSub asset)
+        internal ShaderAsset(BuildingInfoSub asset)
         {
             TypeOfAsset = AssetType.SubBuilding;
-            SubBuilding = asset ?? throw new ArgumentNullException(nameof(asset));
+            SubBuilding = asset;
 
             Info = new ShaderInfo(asset.m_mesh.name);
 
@@ -83,10 +83,10 @@ namespace AdditiveShader.Manager
         /// <param name="asset">The <see cref="VehicleInfoSub"/> which uses the shader.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="asset"/> is <c>null</c>.</exception>
         [SuppressMessage("Maintainability", "AV1522:Assign each property, field, parameter or variable in a separate statement", Justification = "Intentional.")]
-        public ShaderAsset(VehicleInfoSub asset)
+        internal ShaderAsset(VehicleInfoSub asset)
         {
             TypeOfAsset = AssetType.Vehicle;
-            Vehicle = asset ?? throw new ArgumentNullException(nameof(asset));
+            Vehicle = asset;
 
             Info = new ShaderInfo(asset.m_mesh.name);
 

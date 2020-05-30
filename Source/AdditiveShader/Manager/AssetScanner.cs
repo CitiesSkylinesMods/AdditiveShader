@@ -51,12 +51,12 @@ namespace AdditiveShader.Manager
             foreach (var prop in Resources.FindObjectsOfTypeAll<PropInfo>())
                 try
                 {
-                    if (HasShaderToken(prop?.m_mesh?.name))
+                    if (prop && HasShaderToken(prop.m_mesh.name))
                         assetList.Add(new ShaderAsset(prop));
                 }
                 catch (Exception error)
                 {
-                    Debug.LogError($"[AdditiveShader] PropInfo error: {prop?.name}\n{error}");
+                    Debug.LogError($"[AdditiveShader] PropInfo error: {prop.name}\n{error}");
                 }
         }
 
@@ -69,17 +69,18 @@ namespace AdditiveShader.Manager
             foreach (var building in Resources.FindObjectsOfTypeAll<BuildingInfo>())
                 try
                 {
-                    if (HasShaderToken(building?.m_mesh?.name))
-                        assetList.Add(new ShaderAsset(building));
+                    if (building)
+                    {
+                        if (HasShaderToken(building.m_mesh.name))
+                            assetList.Add(new ShaderAsset(building));
 
-                    if (building?.m_props == null || building.m_props.Length == 0)
-                        continue;
-
-                    CheckBuildingForShaderProps(building);
+                        if (building.m_props != null)
+                            CheckBuildingForShaderProps(building);
+                    }
                 }
                 catch (Exception error)
                 {
-                    Debug.LogError($"[AdditiveShader] BuildingInfo error: {building?.name} \n{error}");
+                    Debug.LogError($"[AdditiveShader] BuildingInfo error: {building.name} \n{error}");
                 }
         }
 
@@ -92,12 +93,14 @@ namespace AdditiveShader.Manager
         [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
         private static void CheckBuildingForShaderProps(BuildingInfo building)
         {
-            for (uint index = 0; index < building.m_props.Length; index++)
-                if (HasShaderToken(building.m_props[index].m_finalProp?.m_mesh?.name))
+            foreach (var prop in building.m_props)
+            {
+                if (HasShaderToken(prop.m_finalProp.m_mesh.name))
                 {
                     building.m_maxPropDistance = 25000;
                     break;
                 }
+            }
         }
 
         /// <summary>
@@ -109,12 +112,12 @@ namespace AdditiveShader.Manager
             foreach (var subBuilding in Resources.FindObjectsOfTypeAll<BuildingInfoSub>())
                 try
                 {
-                    if (HasShaderToken(subBuilding?.m_mesh?.name))
+                    if (subBuilding && HasShaderToken(subBuilding.m_mesh.name))
                         assetList.Add(new ShaderAsset(subBuilding));
                 }
                 catch (Exception error)
                 {
-                    Debug.LogError($"[AdditiveShader] BuildingInfoSub error: {subBuilding?.name} \n{error}");
+                    Debug.LogError($"[AdditiveShader] BuildingInfoSub error: {subBuilding.name} \n{error}");
                 }
         }
 
@@ -127,12 +130,12 @@ namespace AdditiveShader.Manager
             foreach (var vehicle in Resources.FindObjectsOfTypeAll<VehicleInfoSub>())
                 try
                 {
-                    if (HasShaderToken(vehicle?.m_mesh?.name))
+                    if (vehicle && HasShaderToken(vehicle.m_mesh.name))
                         assetList.Add(new ShaderAsset(vehicle));
                 }
                 catch (Exception error)
                 {
-                    Debug.LogError($"[AdditiveShader] VehicleInfoSub error: {vehicle?.name} \n{error}");
+                    Debug.LogError($"[AdditiveShader] VehicleInfoSub error: {vehicle.name} \n{error}");
                 }
         }
     }

@@ -114,7 +114,7 @@ namespace AdditiveShader.Manager
         /// <returns>Returns <c>false</c>.</returns>
         private bool PauseUpdates()
         {
-            Invoke("ResumeUpdates", iterateTwilight ? 1.0f : 5.0f);
+            Invoke(nameof(ResumeUpdates), iterateTwilight ? 1.0f : 5.0f);
             return enabled = false;
         }
 
