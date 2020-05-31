@@ -30,14 +30,15 @@ namespace AdditiveShader.Manager
         internal void Append(ShaderAsset shader) =>
             report
                 .Append(shader).AppendLine(":")
-                .Append(" - ").Append(shader.Info)
+                .Append("- ").Append(shader.Info)
                 .AppendLine()
-                .Append(" - AlwaysOn: ").Append(shader.Info.IsAlwaysOn)
-                .Append(", Static: ").Append(shader.Info.IsStatic)
-                .Append(", OverlapsMidnight: ").Append(shader.Info.OverlapsMidnight)
-                .Append(", Twilight: ").Append(shader.Info.IsTwilight)
-                .Append(", DayTime: ").Append(shader.Info.IsDayTime)
-                .Append(", NightTime: ").Append(shader.Info.IsNightTime)
+                .Append("- Static: ").Append(shader.Info.IsStatic)
+                .Append(", Always On: ").Append(shader.Info.IsAlwaysOn)
+                .Append(", Alwyas Off: ").Append(shader.Info.IsStatic && !shader.Info.IsAlwaysOn)
+                .Append(", Overlaps Midnight: ").Append(shader.Info.OverlapsMidnight)
+                .Append(", Twilight: ").Append(shader.Info.IsToggledByTwilight)
+                .Append(", Day Time: ").Append(shader.Info.IsDayTimeOnly)
+                .Append(", Night Time: ").Append(shader.Info.IsNightTimeOnly)
                 .AppendLine()
                 .AppendLine();
 

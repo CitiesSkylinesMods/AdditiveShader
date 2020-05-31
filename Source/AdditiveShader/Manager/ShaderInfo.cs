@@ -90,8 +90,8 @@ namespace AdditiveShader.Manager
                         OnTime = SUNRISE;
                         OffTime = SUNSET;
 
-                        IsTwilight = true;
-                        IsDayTime = true;
+                        IsToggledByTwilight = true;
+                        IsDayTimeOnly = true;
 
                         Fade = float.Parse(tags[2]);
                         Intensity = float.Parse(tags[3]);
@@ -101,8 +101,8 @@ namespace AdditiveShader.Manager
                         OnTime = SUNSET;
                         OffTime = SUNRISE;
 
-                        IsTwilight = true;
-                        IsNightTime = true;
+                        IsToggledByTwilight = true;
+                        IsNightTimeOnly = true;
                         OverlapsMidnight = true;
 
                         Fade = float.Parse(tags[2]);
@@ -118,9 +118,9 @@ namespace AdditiveShader.Manager
 
                         IsStatic = IsAlwaysOn || OnTime < 0f;
 
-                        OverlapsMidnight = OnTime > OffTime;
-                        IsTwilight = OverlapsMidnight && TransitionsAtTwilight();
-                        IsNightTime = IsTwilight;
+                        OverlapsMidnight    = OnTime > OffTime;
+                        IsToggledByTwilight = OverlapsMidnight && OnAtDuskOffAtDawn();
+                        IsNightTimeOnly     = IsToggledByTwilight;
 
                         Fade = float.Parse(tags[3]);
                         Intensity = float.Parse(tags[4]);
@@ -134,7 +134,8 @@ namespace AdditiveShader.Manager
         }
 
         /// <summary>
-        /// Gets a value defining the game time at which shader is shown.
+        /// <para>Gets a value defining the game time at which shader is shown.</para>
+        /// <para>Note: Will be negative if <c>AlwaysOff</c> keyword was used.</para>
         /// </summary>
         public float OnTime { get; }
 
@@ -150,19 +151,21 @@ namespace AdditiveShader.Manager
 
         /// <summary>
         /// <para>Gets a value indicating whether the shader is toggled by day/night boundary.</para>
-        /// <para>One of <see cref="IsDayTime"/> or <see cref="IsNightTime"/> will be <c>true</c>.</para>
+        /// <para>One of <see cref="IsDayTimeOnly"/> or <see cref="IsNightTimeOnly"/> will be <c>true</c>.</para>
         /// </summary>
-        public bool IsTwilight { get; }
+        public bool IsToggledByTwilight { get; }
 
         /// <summary>
-        /// Gets a value indicating whether the shader is on all day _and_ off all night.
+        /// <para>Gets a value indicating whether the shader is on all day _and_ off all night.</para>
+        /// <para>Note: This is determined by the <c>DayTime</c> keyword, not on/off times.</para>
         /// </summary>
-        public bool IsDayTime { get; }
+        public bool IsDayTimeOnly { get; }
 
         /// <summary>
-        /// Gets a value indicating whether the shader is on all night _and_ off all day.
+        /// <para>Gets a value indicating whether the shader is on all night _and_ off all day.</para>
+        /// <para>Note: This is determined by either the <c>NightTime</c> keyword, or on/off times which occur during twilight.</para>
         /// </summary>
-        public bool IsNightTime { get; }
+        public bool IsNightTimeOnly { get; }
 
         /// <summary>
         /// Gets a value indicating whether the OnTime == OffTime (ie. the shader is always visible).
@@ -170,7 +173,8 @@ namespace AdditiveShader.Manager
         public bool IsAlwaysOn { get; }
 
         /// <summary>
-        /// Gets a value indicating whether the shader is static (always on, or always off).
+        /// <para>Gets a value indicating whether the shader is static (always on, or always off).</para>
+        /// <para>Note: If <c>true</c>, and <see cref="IsAlwaysOn"/> is <c>false</c>, it means "always off".</para>
         /// </summary>
         public bool IsStatic { get; }
 
@@ -178,7 +182,7 @@ namespace AdditiveShader.Manager
         /// <para>Gets a value which controls fading of the additive shader.</para>
         /// <para>
         /// The additive shader decreases opacity as it gets closer to other objects.
-        /// Higher values make the fading less noticeable.
+        /// Higher value means less fading, because reasons.
         /// </para>
         /// </summary>
         public float Fade { get; }
@@ -202,13 +206,12 @@ namespace AdditiveShader.Manager
             $"ShaderInfo('{name}')";
 
         /// <summary>
-        /// Given that the shader <see cref="OverlapsMidnight"/>, this does additional
-        /// checks to see if the shader appears to be turning on at sunset and off at
-        /// sunrise (based on vanilla times for those events).
+        /// Given that the shader <see cref="OverlapsMidnight"/>, this checks
+        /// whether it turns on at dusk and off at dawn (based on vanilla times).
         /// </summary>
-        /// <returns>Returns <c>true</c> if the shader is probably a nightlight, otherwise <c>false</c>.</returns>
+        /// <returns>Returns <c>true</c> if on at dusk off at dawn, otherwise <c>false</c>.</returns>
         [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1131:Use readable conditions", Justification = "Common pattern.")]
-        private bool TransitionsAtTwilight() =>
+        private bool OnAtDuskOffAtDawn() =>
             SUNRISE_START < OffTime && OffTime < SUNRISE_END &&
             SUNSET_START  < OnTime  && OnTime  < SUNSET_END  &&
             !tags.Contains("not-twilight");

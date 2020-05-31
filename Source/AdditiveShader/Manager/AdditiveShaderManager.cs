@@ -69,7 +69,7 @@ namespace AdditiveShader.Manager
 
             foreach (var shader in assetList)
             {
-                (shader.Info.IsStatic ? staticShaders : shader.Info.IsTwilight ? twilightShaders : generalShaders).Add(shader);
+                (shader.Info.IsStatic ? staticShaders : shader.Info.IsToggledByTwilight ? twilightShaders : generalShaders).Add(shader);
 
                 report.Append(shader);
             }
