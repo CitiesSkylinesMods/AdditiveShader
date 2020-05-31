@@ -65,8 +65,8 @@ namespace AdditiveShader.Manager
                 switch (tags[1])
                 {
                     case "AlwaysOn":
-                        OnTime = 0;
-                        OffTime = 24;
+                        OnTime = 0f;
+                        OffTime = 24f;
 
                         IsAlwaysOn = true;
                         IsStatic = true;
@@ -77,8 +77,8 @@ namespace AdditiveShader.Manager
                         break;
 
                     case "AlwaysOff":
-                        OnTime = -1;
-                        OffTime = -1;
+                        OnTime = -1f;
+                        OffTime = -1f;
 
                         IsStatic = true;
 
@@ -113,7 +113,9 @@ namespace AdditiveShader.Manager
                         OnTime = float.Parse(tags[1]);
                         OffTime = float.Parse(tags[2]);
 
-                        IsAlwaysOn = OnTime == OffTime && OnTime >= 0f || OnTime == 0f && OffTime == 24f;
+                        IsAlwaysOn = OnTime == OffTime && OnTime >= 0f
+                                  || OnTime == 0f && OffTime == 24f;
+
                         IsStatic = IsAlwaysOn || OnTime < 0f;
 
                         OverlapsMidnight = OnTime > OffTime;
