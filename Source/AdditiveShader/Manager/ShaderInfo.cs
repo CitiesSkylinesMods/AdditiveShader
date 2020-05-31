@@ -14,13 +14,6 @@ namespace AdditiveShader.Manager
     [SuppressMessage("StyleCop.CSharp.NamingRules", "SA1310:Field names should not contain underscore")]
     public class ShaderInfo
     {
-        // Indexes of the parameters stored in tags array
-        // Note: Tag 0 is always "AdditiveShader"
-        private const int TIME_ON   = 1;
-        private const int TIME_OFF  = 2;
-        private const int FADE      = 3;
-        private const int INTENSITY = 4;
-
         // Hard-coded values derived from SimulationManager's `SUNRISE_HOUR` and `SUNSET_HOUR` members.
         // This is done because mods such as Real Time can alter those vanilla values. We need the
         // vanilla values as that's what most asset authors base their twilight shader on/off times on.
@@ -55,69 +48,119 @@ namespace AdditiveShader.Manager
         /// Initializes a new instance of the <see cref="ShaderInfo"/> class
         /// by parsing the shader settings from the mesh name.
         /// </summary>
-        /// <param name="meshName"><para>The mesh name for the asset that contains the additive shader.</para>
-        /// <para>
-        /// Must be in the following format: <code>"AdditiveShader On Off Fade Intensity"</code>
-        /// as defined by <see cref="https://cslmodding.info/mod/additive-shader/"/>.
-        /// </para>
-        /// <para>Tags can optionally be appeneded to the end, each preceded by a space and in lowercase text.</para>
-        /// </param>
+        /// <param name="meshName">The mesh name for the asset that contains the additive shader.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="meshName"/> is <c>null</c>.</exception>
         /// <exception cref="FormatException">Thrown if <paramref name="meshName"/> format is invalid.</exception>
         [SuppressMessage("StyleCop.CSharp.SpacingRules", "SA1011:Closing square brackets should be spaced correctly")]
+        [SuppressMessage("Maintainability", "AV1500:Member or local function contains too many statements", Justification = "Parsing tags.")]
         public ShaderInfo(string meshName)
         {
-            name = meshName ?? throw new ArgumentNullException(nameof(meshName));
-            tags = meshName.Split(DELIMITER, StringSplitOptions.RemoveEmptyEntries);
-
             try
             {
-                OnTime    = float.Parse(tags[TIME_ON  ]);
-                OffTime   = float.Parse(tags[TIME_OFF ]);
-                Fade      = float.Parse(tags[FADE     ]);
-                Intensity = float.Parse(tags[INTENSITY]);
+                name = meshName ?? throw new ArgumentNullException(nameof(meshName));
+                tags = meshName.Split(DELIMITER, StringSplitOptions.RemoveEmptyEntries);
+
+                // AdditiveShader on off fade intensity [tags ...]
+                // AdditiveShader Keyword fade intensity [tags ...]
+                switch (tags[1])
+                {
+                    case "AlwaysOn":
+                        OnTime = 0;
+                        OffTime = 24;
+
+                        IsAlwaysOn = true;
+                        IsStatic = true;
+                        OverlapsMidnight = true;
+
+                        Fade = float.Parse(tags[2]);
+                        Intensity = float.Parse(tags[3]);
+                        break;
+
+                    case "AlwaysOff":
+                        OnTime = -1;
+                        OffTime = -1;
+
+                        IsStatic = true;
+
+                        Fade = float.Parse(tags[2]);
+                        Intensity = float.Parse(tags[3]);
+                        break;
+
+                    case "DayTime":
+                        OnTime = SUNRISE;
+                        OffTime = SUNSET;
+
+                        IsTwilight = true;
+                        IsDayTime = true;
+
+                        Fade = float.Parse(tags[2]);
+                        Intensity = float.Parse(tags[3]);
+                        break;
+
+                    case "NightTime":
+                        OnTime = SUNSET;
+                        OffTime = SUNRISE;
+
+                        IsTwilight = true;
+                        IsNightTime = true;
+                        OverlapsMidnight = true;
+
+                        Fade = float.Parse(tags[2]);
+                        Intensity = float.Parse(tags[3]);
+                        break;
+
+                    default:
+                        OnTime = float.Parse(tags[1]);
+                        OffTime = float.Parse(tags[2]);
+
+                        IsAlwaysOn = OnTime == OffTime && OnTime >= 0f || OnTime == 0f && OffTime == 24f;
+                        IsStatic = IsAlwaysOn || OnTime < 0f;
+
+                        OverlapsMidnight = OnTime > OffTime;
+                        IsTwilight = OverlapsMidnight && TransitionsAtTwilight();
+                        IsNightTime = IsTwilight;
+
+                        Fade = float.Parse(tags[3]);
+                        Intensity = float.Parse(tags[4]);
+                        break;
+                }
             }
             catch (Exception error)
             {
                 throw new FormatException($"Invalid mesh name format: {meshName}", error);
             }
-
-            IsAlwaysOn = OnTime == OffTime && OnTime >= 0f || OnTime == 0f && OffTime == 24f;
-
-            IsStatic = IsAlwaysOn || OnTime < 0f; // -1 denotes always off (manual control, eg. via other mods)
-
-            OverlapsMidnight = OnTime > OffTime;
-
-            IsTwilight = OverlapsMidnight && TransitionsAtTwilight();
         }
 
         /// <summary>
-        /// Gets a value which determines what game time the shader is made visible.
+        /// Gets a value defining the game time at which shader is shown.
         /// </summary>
         public float OnTime { get; }
 
         /// <summary>
-        /// Gets a value which determines what game time the shader is made invisible.
+        /// Gets a value defining the game time at which shader is hidden.
         /// </summary>
         public float OffTime { get; }
 
         /// <summary>
-        /// Gets a value indicating whether the OnTime > OffTime (ie. the shader is visible across the midnight boundary).
+        /// Gets a value indicating whether OnTime > OffTime (ie. the shader is visible across the midnight boundary).
         /// </summary>
         public bool OverlapsMidnight { get; }
 
         /// <summary>
-        /// <para>Gets a value indicating whether the shader turns on at dusk and off at dawn.</para>
-        /// <para>
-        /// In this situation, the shader is moved to a different list to allow batch toggling
-        /// when day transitions to night and vice versa.
-        /// </para>
-        /// <para>
-        /// As an added advantage, this also makes the shader synchronise with variable day
-        /// lengths (and thus sun set/rise times) associated with the Real Time mod by dymanoid.
-        /// </para>
+        /// <para>Gets a value indicating whether the shader is toggled by day/night boundary.</para>
+        /// <para>One of <see cref="IsDayTime"/> or <see cref="IsNightTime"/> will be <c>true</c>.</para>
         /// </summary>
         public bool IsTwilight { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether the shader is on all day _and_ off all night.
+        /// </summary>
+        public bool IsDayTime { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether the shader is on all night _and_ off all day.
+        /// </summary>
+        public bool IsNightTime { get; }
 
         /// <summary>
         /// Gets a value indicating whether the OnTime == OffTime (ie. the shader is always visible).
@@ -143,12 +186,6 @@ namespace AdditiveShader.Manager
         /// <para>Values above 1 may start to bloom.</para>
         /// </summary>
         public float Intensity { get; }
-
-        /// <summary>
-        /// <para>Gets a value containing tags associated with the asset.</para>
-        /// <para>This can be used by mods to toggle shaders for those assets on/off.</para>
-        /// </summary>
-        public string Tags { get; }
 
         /// <summary>
         /// Check if a tag is defined. Case sensitive. Tags should always be lower case.
