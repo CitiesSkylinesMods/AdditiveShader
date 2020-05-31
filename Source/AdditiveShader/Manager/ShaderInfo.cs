@@ -170,8 +170,8 @@ namespace AdditiveShader.Manager
         /// <returns>Returns <c>true</c> if the shader is probably a nightlight, otherwise <c>false</c>.</returns>
         [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1131:Use readable conditions", Justification = "Common pattern.")]
         private bool TransitionsAtTwilight() =>
-            SUNRISE_START < OnTime && OnTime < SUNRISE_END &&
-            SUNSET_START < OffTime && OffTime < SUNSET_END &&
+            SUNRISE_START < OffTime && OffTime < SUNRISE_END &&
+            SUNSET_START  < OnTime  && OnTime  < SUNSET_END  &&
             !tags.Contains("not-twilight");
     }
 }

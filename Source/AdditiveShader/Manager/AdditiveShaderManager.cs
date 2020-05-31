@@ -1,8 +1,6 @@
 namespace AdditiveShader.Manager
 {
-    using System;
     using System.Collections.Generic;
-    using System.Text;
     using ColossalFramework;
     using JetBrains.Annotations;
     using UnityEngine;
