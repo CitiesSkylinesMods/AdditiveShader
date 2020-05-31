@@ -1,5 +1,6 @@
 namespace AdditiveShader.Manager
 {
+    using System.Diagnostics;
     using System.Text;
     using UnityEngine;
 
@@ -11,11 +12,15 @@ namespace AdditiveShader.Manager
     {
         private readonly StringBuilder report;
 
+        private readonly Stopwatch timer;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="AssetReporter"/> class.
         /// </summary>
         internal AssetReporter()
         {
+            timer = Stopwatch.StartNew();
+
             report = new StringBuilder(2048);
 
             report
@@ -50,16 +55,16 @@ namespace AdditiveShader.Manager
         /// <param name="countGeneral">Number of general time-based shaders.</param>
         internal void Summary(int countAll, int countTwilight, int countGeneral) =>
             report
-                .AppendLine()
                 .Append("Found ").Append(countAll).Append(" assets")
                 .Append(" (static: ").Append(countAll - countTwilight - countGeneral)
-                .Append(", twilight: ").Append(countTwilight)
-                .Append(", others: ").Append(countGeneral).Append(" ).");
+                .Append(", day/night: ").Append(countTwilight)
+                .Append(", others: ").Append(countGeneral).Append(" ) ")
+                .Append("in ").Append(timer.ElapsedMilliseconds).Append("ms.");
 
         /// <summary>
         /// Publish report to the game log file.
         /// </summary>
         internal void PublishToLogFile()
-            => Debug.Log(report.ToString());
+            => UnityEngine.Debug.Log(report.ToString());
     }
 }
