@@ -67,7 +67,18 @@ That results in:
 AdditiveShader AlwaysOn 20 2 foo bar
 ```
 
-That will be always on, and is tagged `foo` and `bar`.
+That will be always on, and is also tagged `foo` and `bar`.
+
+### keywords
+
+> Keywords feature was added in version 1.5.0
+
+The following keywords can be used to denote common on/off times:
+
+* `AlwaysOn` -- shader visible at all times
+* `AlwaysOff` -- shader never visible (useful for mod controlled shaders)
+* `DayTime` -- shader on during day time, off during night time
+* `NightTime` -- shader off during day time, on during night time
 
 ### Times
 
