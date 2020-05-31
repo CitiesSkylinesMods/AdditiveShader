@@ -352,6 +352,9 @@ dotnet_diagnostic.AV1130.severity = warning
 dotnet_diagnostic.AV1500.max_statement_count = 12
 dotnet_diagnostic.AV1500.severity = suggestion
 
+# AV1535: Always add a block after the keywords `if`, `else`, `do`, `while`, `for`, `foreach` and `case`
+dotnet_diagnostic.AV1535.severity = none
+
 # AV1561: Don't declare signatures with more than X parameters
 dotnet_diagnostic.AV1561.max_parameter_count = 5
 dotnet_diagnostic.AV1561.severity = suggestion
