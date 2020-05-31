@@ -167,11 +167,18 @@ namespace AdditiveShader.Manager
         /// Show or hide the additive shader for this asset based on game world time.
         /// </summary>
         /// <param name="time">The game time of day.</param>
-        public void SetVisible(float time) =>
+        public void SetVisibleByTime(float time) =>
             SetVisible(
                 Info.OverlapsMidnight
                     ? time < Info.OffTime || Info.OnTime <= time
                     : Info.OnTime <= time && time < Info.OffTime);
+
+        /// <summary>
+        /// Show or hide the additive shader for this asset based on night vs. day.
+        /// </summary>
+        /// <param name="isNightTime">Set <c>true</c> if it is now night time in game world.</param>
+        public void SetVisibleByTwilight(bool isNightTime) =>
+            SetVisible(isNightTime == Info.IsNightTime);
 
         /// <summary>
         /// Show or hide the additive shader for this asset.

@@ -31,7 +31,7 @@ namespace AdditiveShader.Manager
         private List<ShaderAsset> generalShaders;
 
         /// <summary>
-        /// Used to spot twilight transitions.
+        /// Tracks if it is currently night time.
         /// </summary>
         private bool isNightTime;
 
@@ -94,11 +94,11 @@ namespace AdditiveShader.Manager
 
             if (iterateTwilight)
             {
-                twilightShaders[index].SetVisible(isNightTime);
+                twilightShaders[index].SetVisibleByTwilight(isNightTime);
             }
             else
             {
-                generalShaders[index].SetVisible(Singleton<SimulationManager>.instance.m_currentDayTimeHour);
+                generalShaders[index].SetVisibleByTime(Singleton<SimulationManager>.instance.m_currentDayTimeHour);
             }
         }
 
