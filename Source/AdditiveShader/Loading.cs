@@ -6,16 +6,12 @@ namespace AdditiveShader
     using UnityEngine;
 
     /// <summary>
-    /// Loading extension for AdditiveShader mod:
-    /// <list type="bullet">
-    /// <item><term>OnLevelLoaded</term> if applicable <see cref="LoadMode"/>, creates a <see cref="GameObject"/> for the <see cref="AdditiveShaderManager"/>.</item>
-    /// <item><term>OnLevelUnloading</term> destroys the <see cref="AdditiveShaderManager"/> <see cref="GameObject"/>, if it exists.</item>
-    /// </list>
+    /// Loading extension for AdditiveShader mod.
     /// </summary>
     [UsedImplicitly]
     public class Loading : LoadingExtensionBase
     {
-        private GameObject gameobj;
+        private GameObject gameObject;
 
         /// <summary>
         /// If applicable <paramref name="mode"/>, creates a <see cref="GameObject"/> for the <see cref="AdditiveShaderManager"/>.
@@ -29,24 +25,24 @@ namespace AdditiveShader
             if (UserMod.IsEnabled && IsApplicable(mode))
             {
                 Debug.Log($"[AdditiveShader] Initialising for LoadMode: {mode}");
-                gameobj = new GameObject();
-                gameobj.AddComponent<AdditiveShaderManager>();
+                gameObject = new GameObject();
+                gameObject.AddComponent<AdditiveShaderManager>();
             }
         }
 
         /// <summary>
-        /// If it exists, destroys the <see cref="AdditiveShaderManager"/> <see cref="GameObject"/>.
+        /// If it exists, destroys the <see cref="AdditiveShaderManager"/> and <see cref="GameObject"/>.
         /// </summary>
         [UsedImplicitly]
         public override void OnLevelUnloading()
         {
             base.OnLevelUnloading();
 
-            if (gameobj != null)
-            {
-                Object.Destroy(gameobj);
-                gameobj = null;
-            }
+            if (!gameObject)
+                return;
+
+            Object.Destroy(gameObject);
+            gameObject = null;
         }
 
         /// <summary>
@@ -54,7 +50,7 @@ namespace AdditiveShader
         /// </summary>
         /// <param name="mode">The <see cref="LoadMode"/> applicable to this loading extension.</param>
         /// <returns>Returns <c>true</c> if the mod is applicable, otherwise <c>false</c>.</returns>
-        private bool IsApplicable(LoadMode mode) =>
+        private static bool IsApplicable(LoadMode mode) =>
             mode == LoadMode.NewGame ||
             mode == LoadMode.LoadGame;
     }
