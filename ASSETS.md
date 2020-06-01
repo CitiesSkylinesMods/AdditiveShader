@@ -76,7 +76,6 @@ That will be always on, and is also tagged `foo` and `bar`.
 The following keywords can be used to denote common on/off times:
 
 * `AlwaysOn` -- shader visible at all times
-* `AlwaysOff` -- shader never visible (useful for mod controlled shaders)
 * `DayTime` -- shader on during day time, off during night time
 * `NightTime` -- shader off during day time, on during night time
 
@@ -96,10 +95,6 @@ To make a shader 'always on', use _one_ of the following:
 * Set **On** and **Off** to the same value (eg. `24 24`)
 * Set **On** to `0` and **Off** to `24`
 
-To make a shader 'always off' (useful for mod controlled shaders):
-
-* Use **Keyword** `AlwaysOff`
-
 Static shaders are updated once, when your city loads. As such they do not put
 any load on the CPU.
 
@@ -118,12 +113,12 @@ To make a shader turn on and off at specific game day times:
    * On that following day, it will eventually turn off, at **Off time**
    * Rinse, wash, repeat.
 
-Time-based shaders are updated every few frames, so the actual on/off time
-in-game might be delayed by a few seconds, because reasons.
+Time-based shader updates are spread across frame, so the actual on/off time
+in-game might be delayed a little.
 
-If your **On** and **Off** times are very close together, it's possible the
-shader won't even appear, because it might reach 'off time' before it's been
-turned on!
+> If your **On** and **Off** times are extremely close together, it's possible
+the shader won't appear, because it might reach 'off time' before it's
+been turned on!
 
 #### Twilight shaders
 
@@ -132,8 +127,8 @@ These are the most common, where the shader turns on at dusk, and off at dawn.
 * Use **Keyword** `DayTime` to make the shader visible during daylight hours
 * Use **Keyword** `NightTime` to make the shader visible during night hours
 
-If mods, such as Real Time, alter the sunrise/sunset times, twilight shaders
-will automatically adapt to the changed times.
+_If mods such as [Real Time](https://steamcommunity.com/sharedfiles/filedetails/?id=1420955187),
+alter the sunrise/sunset times, twilight shaders will automatically adapt to the changed times!_
 
 Example:
 
@@ -178,12 +173,12 @@ The **Intensity** value sets the light multiplier:
 Tags are arbitrary keywords that you can add to the end of the mesh name:
 
 * They are optional, you can have none, one or more
-* They must be preceded by a space
-* They must be lowercase
+* Each tag is separated by a space
+* They must be lowercase (to avoid conflict with KeyWords)
 * Avoid number-only tags (alphanumeric is OK)
 
 The main purpose of tags is for interaction with other mods that can toggle
-shaders with matching tags on/off.
+shaders with matching tags on/off (this feature is not available yet).
 
 ## Diagnosing problems
 
@@ -191,7 +186,7 @@ If your shader is not behaving how you expect, search the game log for
 `[AdditiveShader]` to find diagnostic and error reports.
 
 Searching `[AdditiveShader] Assets` will take you to a list of all assets
-that use additive shader; any errors will usually appear just before that.
+that use additive shader with some debug info to help identify problems.
 
 Remember that shaders on/off times might be delayed, especially if you have a
 shitton of assets that use the shader, or if your game is lagging real bad.
