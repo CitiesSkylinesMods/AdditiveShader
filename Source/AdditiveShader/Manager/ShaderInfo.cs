@@ -1,8 +1,8 @@
 namespace AdditiveShader.Manager
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
-    using System.Linq;
 
     /// <summary>
     /// <para>This class is used to extract and parse parameters from a mesh name.</para>
@@ -16,7 +16,7 @@ namespace AdditiveShader.Manager
     {
         // Hard-coded values derived from SimulationManager's `SUNRISE_HOUR` and `SUNSET_HOUR` members.
         // This is done because mods such as Real Time can alter those vanilla values. We need the
-        // vanilla values as that's what most asset authors base their twilight shader on/off times on.
+        // original values as that's what most asset authors base their twilight shader on/off times on.
         private const float SUNRISE = 5f;
         private const float SUNSET = 20f;
 
@@ -35,102 +35,122 @@ namespace AdditiveShader.Manager
         private static readonly char[] DELIMITER = new[] { ' ' };
 
         /// <summary>
-        /// The original, unaltered mesh name.
+        /// Named shader profiles.
         /// </summary>
-        private readonly string name;
+        private static readonly Dictionary<string, ShaderInfo> Profiles;
 
         /// <summary>
-        /// The raw shader parameters split from the mesh name.
+        /// The original, unaltered mesh name.
         /// </summary>
-        private readonly string[] tags;
+        private readonly string meshName;
+
+        [SuppressMessage("StyleCop.CSharp.SpacingRules", "SA1001:Commas should be spaced correctly")]
+        [SuppressMessage("Performance", "CA1810:Initialize reference type static fields inline")]
+        [SuppressMessage("StyleCop.CSharp.SpacingRules", "SA1009:Closing parenthesis should be spaced correctly")]
+        static ShaderInfo()
+        {
+            Profiles = new Dictionary<string, ShaderInfo>
+            {
+                // Profile                        On       Off      RC     Always Static Mid    Twi    Day    Night
+                { "AlwaysOn"     , new ShaderInfo(0f     , 24f    , false, true , true , false, false, false, false) },
+                { "RemoteControl", new ShaderInfo(-1     , -1     , true , false, true , false, false, false, false) },
+                { "DayTime"      , new ShaderInfo(SUNRISE, SUNSET , false, false, false, false, true , true , false) },
+                { "NightTime"    , new ShaderInfo(SUNSET , SUNRISE, false, false, false, true , true , false, true ) },
+            };
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ShaderInfo"/> class
         /// by parsing the shader settings from the mesh name.
         /// </summary>
-        /// <param name="meshName">The mesh name for the asset that contains the additive shader.</param>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="meshName"/> is <c>null</c>.</exception>
-        /// <exception cref="FormatException">Thrown if <paramref name="meshName"/> format is invalid.</exception>
+        /// <param name="rawMeshName">The mesh name for the asset that contains the additive shader.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="rawMeshName"/> is <c>null</c>.</exception>
+        /// <exception cref="FormatException">Thrown if <paramref name="rawMeshName"/> format is invalid.</exception>
         [SuppressMessage("StyleCop.CSharp.SpacingRules", "SA1011:Closing square brackets should be spaced correctly")]
         [SuppressMessage("Maintainability", "AV1500:Member or local function contains too many statements", Justification = "Parsing tags.")]
-        public ShaderInfo(string meshName)
+        [SuppressMessage("Style", "IDE0008:Use explicit type", Justification = "Can only ever be string[] (game api).")]
+        public ShaderInfo(string rawMeshName, string assetType)
         {
             try
             {
-                name = meshName ?? throw new ArgumentNullException(nameof(meshName));
-                tags = meshName.Split(DELIMITER, StringSplitOptions.RemoveEmptyEntries);
+                meshName = rawMeshName ?? throw new ArgumentNullException(nameof(rawMeshName));
+
+                var tags = rawMeshName.Split(DELIMITER, StringSplitOptions.RemoveEmptyEntries);
+                HashTags = new HashSet<string>(tags) { assetType };
+
+                // AdditiveShader Keyword fade intensity [tags ...]
+                if (Profiles.TryGetValue(tags[1], out var profile))
+                {
+                    OnTime  = profile.OnTime;
+                    OffTime = profile.OffTime;
+
+                    IsRemotelyControlled = profile.IsRemotelyControlled;
+
+                    IsAlwaysOn = profile.IsAlwaysOn;
+                    IsStatic   = profile.IsStatic;
+
+                    OverlapsMidnight    = profile.OverlapsMidnight;
+                    IsToggledByTwilight = profile.IsToggledByTwilight;
+
+                    IsNightTimeOnly = profile.IsNightTimeOnly;
+                    IsDayTimeOnly   = profile.IsDayTimeOnly;
+
+                    Fade      = float.Parse(tags[2]);
+                    Intensity = float.Parse(tags[3]);
+                }
 
                 // AdditiveShader on off fade intensity [tags ...]
-                // AdditiveShader Keyword fade intensity [tags ...]
-                switch (tags[1])
+                else
                 {
-                    case "AlwaysOn":
-                        OnTime = 0f;
-                        OffTime = 24f;
+                    OnTime = float.Parse(tags[1]);
+                    OffTime = float.Parse(tags[2]);
 
-                        IsAlwaysOn = true;
-                        IsStatic = true;
-                        OverlapsMidnight = true;
+                    IsRemotelyControlled = OnTime < 0f;
 
-                        Fade = float.Parse(tags[2]);
-                        Intensity = float.Parse(tags[3]);
-                        break;
+                    IsAlwaysOn = !IsRemotelyControlled &&
+                                 (OnTime == OffTime || OnTime == 0f && OffTime == 24f);
 
-                    case "AlwaysOff":
-                        OnTime = -1f;
-                        OffTime = -1f;
+                    IsStatic = IsAlwaysOn || IsRemotelyControlled;
 
-                        IsStatic = true;
+                    OverlapsMidnight    = OnTime > OffTime;
+                    IsToggledByTwilight = OverlapsMidnight && OnAtDuskOffAtDawn();
 
-                        Fade = float.Parse(tags[2]);
-                        Intensity = float.Parse(tags[3]);
-                        break;
+                    IsNightTimeOnly = IsToggledByTwilight;
+                    IsDayTimeOnly   = false; // todo: calc
 
-                    case "DayTime":
-                        OnTime = SUNRISE;
-                        OffTime = SUNSET;
-
-                        IsToggledByTwilight = true;
-                        IsDayTimeOnly = true;
-
-                        Fade = float.Parse(tags[2]);
-                        Intensity = float.Parse(tags[3]);
-                        break;
-
-                    case "NightTime":
-                        OnTime = SUNSET;
-                        OffTime = SUNRISE;
-
-                        IsToggledByTwilight = true;
-                        IsNightTimeOnly = true;
-                        OverlapsMidnight = true;
-
-                        Fade = float.Parse(tags[2]);
-                        Intensity = float.Parse(tags[3]);
-                        break;
-
-                    default:
-                        OnTime = float.Parse(tags[1]);
-                        OffTime = float.Parse(tags[2]);
-
-                        IsAlwaysOn = OnTime == OffTime && OnTime >= 0f
-                                  || OnTime == 0f && OffTime == 24f;
-
-                        IsStatic = IsAlwaysOn || OnTime < 0f;
-
-                        OverlapsMidnight    = OnTime > OffTime;
-                        IsToggledByTwilight = OverlapsMidnight && OnAtDuskOffAtDawn();
-                        IsNightTimeOnly     = IsToggledByTwilight;
-
-                        Fade = float.Parse(tags[3]);
-                        Intensity = float.Parse(tags[4]);
-                        break;
+                    Fade      = float.Parse(tags[3]);
+                    Intensity = float.Parse(tags[4]);
                 }
             }
             catch (Exception error)
             {
-                throw new FormatException($"Invalid mesh name format: {meshName}", error);
+                throw new FormatException($"Invalid mesh name format: {rawMeshName}", error);
             }
+        }
+
+        // Internal use only - used to build profiles to reduce cruft in main constructor
+        [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1117:Parameters should be on same line or separate lines")]
+        [SuppressMessage("Maintainability", "AV1561:Signature contains too many parameters")]
+        private ShaderInfo(
+            float onTime, float offTime,
+            bool isRemote,
+            bool isAlwaysOn, bool isStatic,
+            bool overlapsMidnight, bool isTwilight,
+            bool isDayOnly, bool isNightOnly)
+        {
+            OnTime  = onTime;
+            OffTime = offTime;
+
+            IsRemotelyControlled = isRemote;
+
+            IsAlwaysOn = isAlwaysOn;
+            IsStatic   = isStatic;
+
+            OverlapsMidnight    = overlapsMidnight;
+            IsToggledByTwilight = isTwilight;
+
+            IsDayTimeOnly   = isDayOnly;
+            IsNightTimeOnly = isNightOnly;
         }
 
         /// <summary>
@@ -168,9 +188,14 @@ namespace AdditiveShader.Manager
         public bool IsNightTimeOnly { get; }
 
         /// <summary>
-        /// Gets a value indicating whether the OnTime == OffTime (ie. the shader is always visible).
+        /// Gets a value indicating whether the shader is permanently visible.
         /// </summary>
         public bool IsAlwaysOn { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether the shader is remotely controlled by other mods.
+        /// </summary>
+        public bool IsRemotelyControlled { get; }
 
         /// <summary>
         /// <para>Gets a value indicating whether the shader is static (always on, or always off).</para>
@@ -194,16 +219,12 @@ namespace AdditiveShader.Manager
         public float Intensity { get; }
 
         /// <summary>
-        /// Check if a tag is defined. Case sensitive. Tags should always be lower case.
+        /// Gets a list of tags.
         /// </summary>
-        /// <param name="tag">The tag to check.</param>
-        /// <returns>Returns <c>true</c> if tag found, otherwise <c>false</c>.</returns>
-        public bool HasTag(string tag) =>
-            tags.Contains(tag);
+        public HashSet<string> HashTags { get; }
 
         /// <inheritdoc/>
-        public override string ToString() =>
-            $"ShaderInfo('{name}')";
+        public override string ToString() => $"ShaderInfo('{meshName}')";
 
         /// <summary>
         /// Given that the shader <see cref="OverlapsMidnight"/>, this checks
@@ -212,8 +233,8 @@ namespace AdditiveShader.Manager
         /// <returns>Returns <c>true</c> if on at dusk off at dawn, otherwise <c>false</c>.</returns>
         [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1131:Use readable conditions", Justification = "Common pattern.")]
         private bool OnAtDuskOffAtDawn() =>
+            SUNSET_START  <  OnTime && OnTime  <  SUNSET_END &&
             SUNRISE_START < OffTime && OffTime < SUNRISE_END &&
-            SUNSET_START  < OnTime  && OnTime  < SUNSET_END  &&
-            !tags.Contains("not-twilight");
+            !HashTags.Contains("not-twilight");
     }
 }
