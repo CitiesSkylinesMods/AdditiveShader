@@ -3,10 +3,12 @@ namespace AdditiveShader.Manager
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using System.Linq;
     using UnityEngine;
 
     /// <summary>
-    /// The <see cref="AssetScanner"/> compiles a list of assets which use the additive shader.
+    /// <para>The <see cref="AssetScanner"/> compiles a list of assets which use the additive shader.</para>
+    /// <para>The scanner runs once, during <see cref="AdditiveShaderManager.Start()"/>, and as such is _not_ performance critical.</para>
     /// </summary>
     [SuppressMessage("Class Design", "AV1008:Class should not be static")]
     internal static class AssetScanner
@@ -17,6 +19,19 @@ namespace AdditiveShader.Manager
         private const string TOKEN = "AdditiveShader";
 
         /// <summary>
+        /// If a building contains a prop which uses additive shader,
+        /// the <see cref="BuildingInfo.m_maxPropDistance"/> must be
+        /// increased to prevent its props using LOD.
+        /// </summary>
+        [SuppressMessage("StyleCop.CSharp.NamingRules", "SA1310:Field names should not contain underscore")]
+        private const float EXTENDED_BUILDING_PROP_VISIBILITY_DISTANCE = 25000;
+
+        /// <summary>
+        /// Gets the total number of items scanned, regardless of whether they use additive shader.
+        /// </summary>
+        public static ulong ItemsScanned { get; private set; }
+
+        /// <summary>
         /// Scans supported asset types, converting any that use the shader to
         /// <see cref="ShaderAsset"/> instances which are collated in the
         /// returned list.
@@ -24,6 +39,8 @@ namespace AdditiveShader.Manager
         /// <returns>Returns a list of <see cref="ShaderAsset"/> instances.</returns>
         internal static ICollection<ShaderAsset> ListShaderAssets()
         {
+            ItemsScanned = 0;
+
             var assetList = new List<ShaderAsset>();
 
             Add_Props(assetList);
@@ -40,7 +57,7 @@ namespace AdditiveShader.Manager
         /// <param name="meshName">The <c>m_mesh.name</c> to investigate.</param>
         /// <returns>Returns <c>true</c> if the token is found, otherwise <c>false</c>.</returns>
         private static bool HasShaderToken(string meshName) =>
-            !string.IsNullOrEmpty(meshName) && meshName.Contains(TOKEN);
+            !string.IsNullOrEmpty(meshName) && meshName.StartsWith(TOKEN);
 
         /// <summary>
         /// Scans prop assets, adding any using the shader to the list.
@@ -52,6 +69,8 @@ namespace AdditiveShader.Manager
             foreach (var prop in Resources.FindObjectsOfTypeAll<PropInfo>())
                 try
                 {
+                    ++ItemsScanned;
+
                     if (prop && HasShaderToken(prop.m_mesh?.name))
                         assetList.Add(new ShaderAsset(prop));
                 }
@@ -71,6 +90,8 @@ namespace AdditiveShader.Manager
             foreach (var building in Resources.FindObjectsOfTypeAll<BuildingInfo>())
                 try
                 {
+                    ++ItemsScanned;
+
                     if (building)
                     {
                         if (HasShaderToken(building.m_mesh?.name))
@@ -96,12 +117,8 @@ namespace AdditiveShader.Manager
         [SuppressMessage("Correctness", "UNT0008:Null propagation on Unity objects", Justification = "m_mesh is not derived from MonoBehaviour")]
         private static void CheckBuildingForShaderProps(BuildingInfo building)
         {
-            foreach (var prop in building.m_props)
-                if (prop.m_finalProp && HasShaderToken(prop.m_finalProp.m_mesh?.name))
-                {
-                    building.m_maxPropDistance = 25000;
-                    return;
-                }
+            if (building.m_props.Any(prop => prop.m_finalProp && HasShaderToken(prop.m_finalProp.m_mesh.name)))
+                building.m_maxPropDistance = EXTENDED_BUILDING_PROP_VISIBILITY_DISTANCE;
         }
 
         /// <summary>
@@ -114,6 +131,8 @@ namespace AdditiveShader.Manager
             foreach (var subBuilding in Resources.FindObjectsOfTypeAll<BuildingInfoSub>())
                 try
                 {
+                    ++ItemsScanned;
+
                     if (subBuilding && HasShaderToken(subBuilding.m_mesh?.name))
                         assetList.Add(new ShaderAsset(subBuilding));
                 }
@@ -133,6 +152,8 @@ namespace AdditiveShader.Manager
             foreach (var vehicle in Resources.FindObjectsOfTypeAll<VehicleInfoSub>())
                 try
                 {
+                    ++ItemsScanned;
+
                     if (vehicle && HasShaderToken(vehicle.m_mesh?.name))
                         assetList.Add(new ShaderAsset(vehicle));
                 }
