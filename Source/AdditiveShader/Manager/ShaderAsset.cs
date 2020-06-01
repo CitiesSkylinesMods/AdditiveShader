@@ -1,6 +1,7 @@
 namespace AdditiveShader.Manager
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using UnityEngine;
 
@@ -22,7 +23,7 @@ namespace AdditiveShader.Manager
             TypeOfAsset = AssetType.Prop;
             Prop = asset;
 
-            Info = new ShaderInfo(asset.m_mesh.name);
+            Info = new ShaderInfo(asset.m_mesh.name, nameof(PropInfo));
 
             asset.m_lodHasDifferentShader = false;
             asset.m_material.SetFloat("_InvFade", Info.Fade);
@@ -43,7 +44,7 @@ namespace AdditiveShader.Manager
             TypeOfAsset = AssetType.Building;
             Building = asset;
 
-            Info = new ShaderInfo(asset.m_mesh.name);
+            Info = new ShaderInfo(asset.m_mesh.name, nameof(BuildingInfo));
 
             asset.m_lodHasDifferentShader = false;
             asset.m_lodMissing = true;
@@ -66,7 +67,7 @@ namespace AdditiveShader.Manager
             TypeOfAsset = AssetType.SubBuilding;
             SubBuilding = asset;
 
-            Info = new ShaderInfo(asset.m_mesh.name);
+            Info = new ShaderInfo(asset.m_mesh.name, nameof(BuildingInfoSub));
 
             asset.m_lodHasDifferentShader = false;
             asset.m_material.SetFloat("_InvFade", Info.Fade);
@@ -88,7 +89,7 @@ namespace AdditiveShader.Manager
             TypeOfAsset = AssetType.Vehicle;
             Vehicle = asset;
 
-            Info = new ShaderInfo(asset.m_mesh.name);
+            Info = new ShaderInfo(asset.m_mesh.name, nameof(VehicleInfoSub));
 
             asset.m_material.SetFloat("_InvFade", Info.Fade);
             asset.m_mesh.colors = GetMeshColors(asset.m_mesh.vertices.Length);
@@ -107,6 +108,12 @@ namespace AdditiveShader.Manager
         /// Gets a value containing shader parameters which were parsed from the mesh name.
         /// </summary>
         public ShaderInfo Info { get; }
+
+        /// <summary>
+        /// Gets hashtags for the shader. Case sensitive. Tags should always be lower case.
+        /// </summary>
+        /// <returns>Returns a <see cref="HashSet{string}"/> represetnation of the shader tags.</returns>
+        public HashSet<string> HashTags => Info.HashTags;
 
         /// <summary>
         /// <para>Gets a value indicating what type of asset this instance represents.</para>
@@ -209,14 +216,6 @@ namespace AdditiveShader.Manager
                     break;
             }
         }
-
-        /// <summary>
-        /// Check if a tag is defined. Case sensitive. Tags should always be lower case.
-        /// </summary>
-        /// <param name="tag">The tag to check.</param>
-        /// <returns>Returns <c>true</c> if tag found, otherwise <c>false</c>.</returns>
-        public bool HasTag(string tag) =>
-            Info.HasTag(tag);
 
         /// <summary>
         /// Returns an array filled with <see cref="Color.white"/>.
