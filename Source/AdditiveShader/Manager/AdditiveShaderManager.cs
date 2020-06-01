@@ -1,6 +1,8 @@
 namespace AdditiveShader.Manager
 {
+    using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using ColossalFramework;
     using JetBrains.Annotations;
     using UnityEngine;
@@ -8,13 +10,25 @@ namespace AdditiveShader.Manager
     /// <summary>
     /// <para>Attached to a game object, this manager will perform the following tasks:
     /// <list type="bullet">
-    /// <item><term>Start</term> collate a list of all assets using the additive shader.</item>
-    /// <item><term>Update</term> set visibility of the shaders based on their parameters.</item>
+    /// <item><term>Start</term> collate a lists of assets using the additive shader.</item>
+    /// <item><term>Update</term> set visibility of time-based shaders.</item>
     /// </list>
     /// </para>
     /// </summary>
     public class AdditiveShaderManager : MonoBehaviour
     {
+        /// <summary>
+        /// <para>Lookup of remote group <see cref="Guid"/> to associated assets.</para>
+        /// <para>A group is only added to the dictionary if it contains one or more assets.</para>
+        /// </summary>
+        private Dictionary<Guid, IEnumerable<ShaderAsset>> remoteGroups;
+
+        /// <summary>
+        /// A list of shader assets that are remotely controlled by external mods
+        /// using the <see cref="UserMod.SetVisibilityForTag(string, bool)"/> method.
+        /// </summary>
+        private List<ShaderAsset> remoteShaders;
+
         /// <summary>
         /// A list of shader assets that are static (always on/off).
         /// </summary>
@@ -55,12 +69,68 @@ namespace AdditiveShader.Manager
         private int count;
 
         /// <summary>
-        /// Collates list of assets that use the additive shader, sorts them in to lists.
+        /// Adds a remote control group with shaders matching the specified tags.
+        /// </summary>
+        /// <param name="group">The group <see cref="Guid"/>.</param>
+        /// <param name="tags">Shaders containing all tags will be added to the group.</param>
+        /// <returns>Returns <c>true</c> if the group contains at leasts one shader, otherwise <c>false</c>.</returns>
+        [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
+        public bool AddRemoteGroup(Guid group, HashSet<string> tags)
+        {
+            if (remoteShaders.Count == 0 || remoteGroups.ContainsKey(group) || tags == null || tags.Count == 0)
+                return false;
+
+            var shaders = new List<ShaderAsset>();
+
+            foreach (var shader in remoteShaders)
+                if (tags.IsSubsetOf(shader.HashTags))
+                    shaders.Add(shader);
+
+            if (shaders.Count == 0)
+                return false;
+
+            shaders.TrimExcess();
+            remoteGroups.Add(group, shaders);
+            return true;
+        }
+
+        /// <summary>
+        /// Removes one or more remote contol groups.
+        /// </summary>
+        /// <param name="groups">A list of one or more group <see cref="Guid"/>s.</param>
+        [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
+        public void RemoveRemoteGroups(ICollection<Guid> groups)
+        {
+            if (groups == null || groups.Count == 0)
+                return;
+
+            foreach (var group in groups)
+                if (remoteGroups.ContainsKey(group))
+                    remoteGroups.Remove(group);
+        }
+
+        /// <summary>
+        /// Sets visibility for all shaders in a remote group.
+        /// </summary>
+        /// <param name="group">The group <see cref="Guid"/>.</param>
+        /// <param name="visible">The desired visibility state of the shaders in the group.</param>
+        [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
+        public void SetRemoteGroupVisibility(Guid group, bool visible)
+        {
+            if (remoteGroups.TryGetValue(group, out var shaders))
+                foreach (var shader in shaders)
+                    shader.SetVisible(visible);
+        }
+
+        /// <summary>
+        /// Initialises shader lists.
         /// </summary>
         [UsedImplicitly]
         protected void Start()
         {
             enabled = false;
+
+            remoteGroups = new Dictionary<Guid, IEnumerable<ShaderAsset>>();
 
             var report    = new AssetReporter();
             var assetList = AssetScanner.ListShaderAssets();
@@ -69,22 +139,28 @@ namespace AdditiveShader.Manager
 
             foreach (var shader in assetList)
             {
-                (shader.Info.IsStatic ? staticShaders : shader.Info.IsToggledByTwilight ? twilightShaders : generalShaders).Add(shader);
+                (shader.Info.IsStatic
+                    ? shader.Info.IsRemotelyControlled
+                        ? remoteShaders
+                        : staticShaders
+                    : shader.Info.IsToggledByTwilight
+                        ? twilightShaders
+                        : generalShaders)
+                .Add(shader);
 
                 report.Append(shader);
             }
 
-            TrimExcessCapacity();
+            TrimShaderLists();
 
-            report.Summary(assetList.Count, twilightShaders.Count, generalShaders.Count);
+            report.Summary(assetList.Count, remoteShaders.Count, twilightShaders.Count, generalShaders.Count);
             report.PublishToLogFile();
 
             enabled = twilightShaders.Count != 0 || generalShaders.Count != 0;
         }
 
         /// <summary>
-        /// <para>Sets visibility of the additive shaders depending on game time.</para>
-        /// <para>PERFORMANCE CRITICAL.</para>
+        /// Update loop. Performance critical!
         /// </summary>
         [UsedImplicitly]
         protected void Update()
@@ -100,6 +176,21 @@ namespace AdditiveShader.Manager
             {
                 generalShaders[index].SetVisibleByTime(Singleton<SimulationManager>.instance.m_currentDayTimeHour);
             }
+        }
+
+        /// <summary>
+        /// Terminates the manager.
+        /// </summary>
+        [UsedImplicitly]
+        protected void OnDestroy()
+        {
+            CancelInvoke();
+
+            enabled = false;
+
+            remoteGroups = null;
+
+            DisposeShaderLists();
         }
 
         /// <summary>
@@ -151,6 +242,7 @@ namespace AdditiveShader.Manager
         private void InitialiseShaderLists(int capacity)
         {
             staticShaders = new List<ShaderAsset>(capacity);
+            remoteShaders = new List<ShaderAsset>(capacity);
             twilightShaders = new List<ShaderAsset>(capacity);
             generalShaders = new List<ShaderAsset>(capacity);
         }
@@ -158,11 +250,23 @@ namespace AdditiveShader.Manager
         /// <summary>
         /// Trims excess capacity from populated lists.
         /// </summary>
-        private void TrimExcessCapacity()
+        private void TrimShaderLists()
         {
             staticShaders.TrimExcess();
+            remoteShaders.TrimExcess();
             twilightShaders.TrimExcess();
             generalShaders.TrimExcess();
         }
-     }
+
+        /// <summary>
+        /// Disposes the shader lists.
+        /// </summary>
+        private void DisposeShaderLists()
+        {
+            staticShaders = null;
+            remoteShaders = null;
+            twilightShaders = null;
+            generalShaders = null;
+        }
+    }
 }
