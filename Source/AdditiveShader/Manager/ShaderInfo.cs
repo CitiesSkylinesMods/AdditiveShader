@@ -11,7 +11,10 @@ namespace AdditiveShader.Manager
     /// and whether it is always on.
     /// </para>
     /// </summary>
+    [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1131:Use readable conditions", Justification = "Common pattern.")]
     [SuppressMessage("StyleCop.CSharp.NamingRules", "SA1310:Field names should not contain underscore")]
+    [SuppressMessage("StyleCop.CSharp.SpacingRules", "SA1008:Opening parenthesis should be spaced correctly")]
+    [SuppressMessage("StyleCop.CSharp.SpacingRules", "SA1009:Closing parenthesis should be spaced correctly")]
     public class ShaderInfo
     {
         // Hard-coded values derived from SimulationManager's `SUNRISE_HOUR` and `SUNSET_HOUR` members.
@@ -29,6 +32,9 @@ namespace AdditiveShader.Manager
         private const float SUNSET_START  = SUNSET  - ONE_HOUR;
         private const float SUNSET_END    = SUNSET  + ONE_HOUR;
 
+        // If tag present, prevents identification as a twilight-toggled shader.
+        private const string NOT_TWILIGHT = "not-twilight";
+
         /// <summary>
         /// Delimiter used for splitting the mesh name in to raw parameter array.
         /// </summary>
@@ -37,46 +43,40 @@ namespace AdditiveShader.Manager
         /// <summary>
         /// Named shader profiles.
         /// </summary>
-        private static readonly Dictionary<string, ShaderInfo> Profiles;
+        [SuppressMessage("StyleCop.CSharp.SpacingRules", "SA1001:Commas should be spaced correctly")]
+        private static readonly Dictionary<string, ShaderInfo> Profiles = new Dictionary<string, ShaderInfo>
+        {
+            // Profile                        On       Off      RC     Always Static Midnt  Twilt  Day    Night
+            { "AlwaysOn"     , new ShaderInfo(0f     , 24f    , false, true , true , false, false, false, false) },
+            { "RemoteControl", new ShaderInfo(-1     , -1     , true , false, true , false, false, false, false) },
+            { "DayTime"      , new ShaderInfo(SUNRISE, SUNSET , false, false, false, false, true , true , false) },
+            { "NightTime"    , new ShaderInfo(SUNSET , SUNRISE, false, false, false, true , true , false, true ) },
+        };
 
         /// <summary>
         /// The original, unaltered mesh name.
         /// </summary>
         private readonly string meshName;
 
-        [SuppressMessage("StyleCop.CSharp.SpacingRules", "SA1001:Commas should be spaced correctly")]
-        [SuppressMessage("Performance", "CA1810:Initialize reference type static fields inline")]
-        [SuppressMessage("StyleCop.CSharp.SpacingRules", "SA1009:Closing parenthesis should be spaced correctly")]
-        static ShaderInfo()
-        {
-            Profiles = new Dictionary<string, ShaderInfo>
-            {
-                // Profile                        On       Off      RC     Always Static Mid    Twi    Day    Night
-                { "AlwaysOn"     , new ShaderInfo(0f     , 24f    , false, true , true , false, false, false, false) },
-                { "RemoteControl", new ShaderInfo(-1     , -1     , true , false, true , false, false, false, false) },
-                { "DayTime"      , new ShaderInfo(SUNRISE, SUNSET , false, false, false, false, true , true , false) },
-                { "NightTime"    , new ShaderInfo(SUNSET , SUNRISE, false, false, false, true , true , false, true ) },
-            };
-        }
-
         /// <summary>
         /// Initializes a new instance of the <see cref="ShaderInfo"/> class
         /// by parsing the shader settings from the mesh name.
         /// </summary>
-        /// <param name="rawMeshName">The mesh name for the asset that contains the additive shader.</param>
+        /// <param name="rawMeshName">The mesh name of the additive shader, which contains the shader settings.</param>
+        /// <param name="assetType">The string name of the asset type, which is added as a HashTag.</param>
+        /// <param name="assetName">The string name of the asset, which is added as a HashTag.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="rawMeshName"/> is <c>null</c>.</exception>
         /// <exception cref="FormatException">Thrown if <paramref name="rawMeshName"/> format is invalid.</exception>
-        [SuppressMessage("StyleCop.CSharp.SpacingRules", "SA1011:Closing square brackets should be spaced correctly")]
-        [SuppressMessage("Maintainability", "AV1500:Member or local function contains too many statements", Justification = "Parsing tags.")]
+        [SuppressMessage("Maintainability", "AV1500:Member or local function contains too many statements", Justification = "Parsing tags to readonly members.")]
         [SuppressMessage("Style", "IDE0008:Use explicit type", Justification = "Can only ever be string[] (game api).")]
-        public ShaderInfo(string rawMeshName, string assetType)
+        public ShaderInfo(string rawMeshName, string assetType, string assetName)
         {
+            meshName = rawMeshName ?? throw new ArgumentNullException(nameof(rawMeshName));
+
             try
             {
-                meshName = rawMeshName ?? throw new ArgumentNullException(nameof(rawMeshName));
-
                 var tags = rawMeshName.Split(DELIMITER, StringSplitOptions.RemoveEmptyEntries);
-                HashTags = new HashSet<string>(tags) { assetType };
+                HashTags = new HashSet<string>(tags) { assetType, assetName };
 
                 // AdditiveShader Keyword fade intensity [tags ...]
                 if (Profiles.TryGetValue(tags[1], out var profile))
@@ -92,34 +92,40 @@ namespace AdditiveShader.Manager
                     OverlapsMidnight    = profile.OverlapsMidnight;
                     IsToggledByTwilight = profile.IsToggledByTwilight;
 
-                    IsNightTimeOnly = profile.IsNightTimeOnly;
                     IsDayTimeOnly   = profile.IsDayTimeOnly;
+                    IsNightTimeOnly = profile.IsNightTimeOnly;
 
                     Fade      = float.Parse(tags[2]);
                     Intensity = float.Parse(tags[3]);
+
+                    AddMetaHashTags();
                 }
 
                 // AdditiveShader on off fade intensity [tags ...]
                 else
                 {
-                    OnTime = float.Parse(tags[1]);
+                    OnTime  = float.Parse(tags[1]);
                     OffTime = float.Parse(tags[2]);
 
-                    IsRemotelyControlled = OnTime < 0f;
+                    IsRemotelyControlled = false;
 
-                    IsAlwaysOn = !IsRemotelyControlled &&
-                                 (OnTime == OffTime || OnTime == 0f && OffTime == 24f);
+                    IsAlwaysOn = OnTime == OffTime || OnTime == 0f && OffTime == 24f;
 
-                    IsStatic = IsAlwaysOn || IsRemotelyControlled;
+                    IsStatic = IsAlwaysOn;
 
-                    OverlapsMidnight    = OnTime > OffTime;
-                    IsToggledByTwilight = OverlapsMidnight && OnAtDuskOffAtDawn();
+                    OverlapsMidnight    = OffTime < OnTime;
+                    IsToggledByTwilight = TogglesAtTwilight();
 
-                    IsNightTimeOnly = IsToggledByTwilight;
-                    IsDayTimeOnly   = false; // todo: calc
+                    IsDayTimeOnly = !IsAlwaysOn && !OverlapsMidnight && SUNSET_START < OnTime && OffTime < SUNSET_END;
+
+                    IsNightTimeOnly = !IsAlwaysOn && OverlapsMidnight
+                        ?  SUNSET_START < OnTime && OffTime < SUNRISE_END
+                        : (SUNSET_START < OnTime || OffTime < SUNRISE_END);
 
                     Fade      = float.Parse(tags[3]);
                     Intensity = float.Parse(tags[4]);
+
+                    AddMetaHashTags(true);
                 }
             }
             catch (Exception error)
@@ -170,7 +176,7 @@ namespace AdditiveShader.Manager
         public bool OverlapsMidnight { get; }
 
         /// <summary>
-        /// <para>Gets a value indicating whether the shader is toggled by day/night boundary.</para>
+        /// <para>Gets a value indicating whether the shader is toggled at dusk/dawn.</para>
         /// <para>One of <see cref="IsDayTimeOnly"/> or <see cref="IsNightTimeOnly"/> will be <c>true</c>.</para>
         /// </summary>
         public bool IsToggledByTwilight { get; }
@@ -226,15 +232,36 @@ namespace AdditiveShader.Manager
         /// <inheritdoc/>
         public override string ToString() => $"ShaderInfo('{meshName}')";
 
+        private static bool IsDuringSunrise(float time) => SUNRISE_START < time && time < SUNRISE_END;
+
+        private static bool IsDuringSunset(float time)  => SUNSET_START  < time && time <  SUNSET_END;
+
         /// <summary>
-        /// Given that the shader <see cref="OverlapsMidnight"/>, this checks
-        /// whether it turns on at dusk and off at dawn (based on vanilla times).
+        /// Determines if the shader toggles at twilight.
         /// </summary>
-        /// <returns>Returns <c>true</c> if on at dusk off at dawn, otherwise <c>false</c>.</returns>
-        [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1131:Use readable conditions", Justification = "Common pattern.")]
-        private bool OnAtDuskOffAtDawn() =>
-            SUNSET_START  <  OnTime && OnTime  <  SUNSET_END &&
-            SUNRISE_START < OffTime && OffTime < SUNRISE_END &&
-            !HashTags.Contains("not-twilight");
+        /// <returns>Returns <c>true</c> if toggles at twilight, otherwise <c>false</c>.</returns>
+        private bool TogglesAtTwilight() =>
+            !IsAlwaysOn &&
+            !HashTags.Contains(NOT_TWILIGHT) &&
+            OverlapsMidnight
+                ? IsDuringSunset(OnTime) && IsDuringSunrise(OffTime)
+                : IsDuringSunrise(OnTime) && IsDuringSunset(OffTime);
+
+        /// <summary>
+        /// Adds some additional HashTags based on properties set by constructor.
+        /// </summary>
+        /// <param name="verbose">If <c>true</c>, additional tags are considered.</param>
+        private void AddMetaHashTags(bool verbose = false)
+        {
+            if (verbose)
+            {
+                if (IsAlwaysOn     ) HashTags.Add("AlwaysOn" );
+                if (IsNightTimeOnly) HashTags.Add("NightTime");
+                if (IsDayTimeOnly  ) HashTags.Add("DayTime"  );
+            }
+
+            if (IsToggledByTwilight) HashTags.Add("Twilight" );
+        }
+
     }
 }
