@@ -19,6 +19,16 @@
     <OutputPath>..\bin\$(Configuration)\</OutputPath>
   </PropertyGroup>
 
+  <!-- Temporary stuff -->
+  <ItemGroup>
+    <None Include="WIP\AdditiveShaderAPI.cs" />
+    <None Include="WIP\RemoteControllerMockup.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="WIP\AdditiveShaderAPI.cs" />
+    <Compile Remove="WIP\RemoteControllerMockup.cs" />
+  </ItemGroup>
+
   <!-- Code analysers -->
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.8" />
@@ -35,9 +45,6 @@
     <Reference Include="ColossalManaged" />
     <Reference Include="ICities" />
     <Reference Include="UnityEngine" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Properties\" />
   </ItemGroup>
 
   <!-- Build target -->
