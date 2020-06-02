@@ -17,6 +17,9 @@ namespace AdditiveShader.Manager
     /// </summary>
     public class AdditiveShaderManager : MonoBehaviour
     {
+        [SuppressMessage("StyleCop.CSharp.NamingRules", "SA1310:Field names should not contain underscore")]
+        private const float TWILIGHT_CHECK_INTERVAL = 9.7f;
+
         /// <summary>
         /// <para>Lookup of remote group <see cref="Guid"/> to associated assets.</para>
         /// <para>A group is only added to the dictionary if it contains one or more assets.</para>
@@ -24,25 +27,19 @@ namespace AdditiveShader.Manager
         private Dictionary<Guid, IEnumerable<ShaderAsset>> remoteGroups;
 
         /// <summary>
-        /// A list of shader assets that are remotely controlled by external mods
-        /// using the <see cref="UserMod.SetVisibilityForTag(string, bool)"/> method.
+        /// A list containing all shaders.
         /// </summary>
-        private List<ShaderAsset> remoteShaders;
+        private ICollection<ShaderAsset> allShaders;
 
         /// <summary>
-        /// A list of shader assets that are static (always on/off).
-        /// </summary>
-        private List<ShaderAsset> staticShaders;
-
-        /// <summary>
-        /// A list of shader assets that turn on at dusk, off at dawn.
+        /// A list of time-based shaders that toggle at twilight (dusk + dawn).
         /// </summary>
         private List<ShaderAsset> twilightShaders;
 
         /// <summary>
-        /// A list of other (non-twilight) time-based shader assets.
+        /// A list of time-based shaders (excluding <see cref="twilightShaders"/>).
         /// </summary>
-        private List<ShaderAsset> generalShaders;
+        private List<ShaderAsset> timeBasedShaders;
 
         /// <summary>
         /// Tracks if it is currently night time.
@@ -53,7 +50,7 @@ namespace AdditiveShader.Manager
         /// <para>Indicates the active list for <see cref="Update()"/>.</para>
         /// <list type="bullet">
         /// <item><c>true</c> -- <see cref="twilightShaders"/></item>
-        /// <item><c>false</c> -- <see cref="generalShaders"/></item>
+        /// <item><c>false</c> -- <see cref="timeBasedShaders"/></item>
         /// </list>
         /// </summary>
         private bool iterateTwilight;
@@ -61,7 +58,7 @@ namespace AdditiveShader.Manager
         /// <summary>
         /// Current item index in active list.
         /// </summary>
-        private int index = int.MaxValue - 1;
+        private int index;
 
         /// <summary>
         /// Number of items in the active list.
@@ -69,20 +66,20 @@ namespace AdditiveShader.Manager
         private int count;
 
         /// <summary>
-        /// Adds a remote control group with shaders matching the specified tags.
+        /// Create a remote control group listing shaders matching the specified tags.
         /// </summary>
-        /// <param name="group">The group <see cref="Guid"/>.</param>
-        /// <param name="tags">Shaders containing all tags will be added to the group.</param>
-        /// <returns>Returns <c>true</c> if the group contains at leasts one shader, otherwise <c>false</c>.</returns>
+        /// <param name="group">The group <see cref="Guid"/> (unique identifier).</param>
+        /// <param name="tags">Shaders matching all tags will be added to the group.</param>
+        /// <returns>Returns <c>true</c> if the group contains at least one shader, otherwise <c>false</c>.</returns>
         [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
         public bool AddRemoteGroup(Guid group, HashSet<string> tags)
         {
-            if (remoteShaders.Count == 0 || remoteGroups.ContainsKey(group) || tags == null || tags.Count == 0)
+            if (allShaders.Count == 0 || remoteGroups.ContainsKey(group) || tags == null || tags.Count == 0)
                 return false;
 
-            var shaders = new List<ShaderAsset>();
+            var shaders = new List<ShaderAsset>(allShaders.Count);
 
-            foreach (var shader in remoteShaders)
+            foreach (var shader in allShaders)
                 if (tags.IsSubsetOf(shader.HashTags))
                     shaders.Add(shader);
 
@@ -123,58 +120,71 @@ namespace AdditiveShader.Manager
         }
 
         /// <summary>
-        /// Initialises shader lists.
+        /// Initialises the manager.
         /// </summary>
         [UsedImplicitly]
         protected void Start()
         {
-            enabled = false;
+            allShaders = AssetScanner.ListShaderAssets();
+
+            if (allShaders.Count == 0)
+            {
+                OnDestroy();
+                return;
+            }
 
             remoteGroups = new Dictionary<Guid, IEnumerable<ShaderAsset>>();
 
-            var report    = new AssetReporter();
-            var assetList = AssetScanner.ListShaderAssets();
+            PrepareShaderCategories(allShaders.Count);
+            SortShadersInToCategories();
+            CompactShaderCategories();
 
-            InitialiseShaderLists(assetList.Count);
+            enabled = timeBasedShaders.Count != 0;
 
-            foreach (var shader in assetList)
+            if (twilightShaders.Count != 0)
             {
-                (shader.Info.IsStatic
-                    ? shader.Info.IsRemotelyControlled
-                        ? remoteShaders
-                        : staticShaders
-                    : shader.Info.IsToggledByTwilight
-                        ? twilightShaders
-                        : generalShaders)
-                .Add(shader);
-
-                report.Append(shader);
+                InvokeRepeating(nameof(CheckForTwilight), TWILIGHT_CHECK_INTERVAL, TWILIGHT_CHECK_INTERVAL);
+                CheckForTwilight();
             }
-
-            TrimShaderLists();
-
-            report.Summary(assetList.Count, remoteShaders.Count, twilightShaders.Count, generalShaders.Count);
-            report.PublishToLogFile();
-
-            enabled = twilightShaders.Count != 0 || generalShaders.Count != 0;
         }
 
         /// <summary>
-        /// Update loop. Performance critical!
+        /// Checks to see if we have crossed twilight boundary.
+        /// </summary>
+        protected void CheckForTwilight()
+        {
+            bool isNightTimeNow = Singleton<SimulationManager>.instance.m_isNightTime;
+
+            if (isNightTime != isNightTimeNow)
+            {
+                isNightTime = isNightTimeNow;
+
+                iterateTwilight = true;
+
+                count = twilightShaders.Count;
+                index = 0;
+
+                enabled = true;
+            }
+        }
+
+        /// <summary>
+        /// Update loop. Performance critical.
         /// </summary>
         [UsedImplicitly]
         protected void Update()
         {
-            if (++index >= count && !IsReadyForNextUpdate())
-                return;
-
-            if (iterateTwilight)
+            if (index >= count)
             {
-                twilightShaders[index].SetVisibleByTwilight(isNightTime);
+                DetermineWhatHappensNext();
+            }
+            else if (iterateTwilight)
+            {
+                twilightShaders[index++].SetVisibleByTwilight(isNightTime);
             }
             else
             {
-                generalShaders[index].SetVisibleByTime(Singleton<SimulationManager>.instance.m_currentDayTimeHour);
+                timeBasedShaders[index++].SetVisibleByTime(Singleton<SimulationManager>.instance.m_currentDayTimeHour);
             }
         }
 
@@ -185,49 +195,42 @@ namespace AdditiveShader.Manager
         protected void OnDestroy()
         {
             CancelInvoke();
-
             enabled = false;
-
             remoteGroups = null;
-
             DisposeShaderLists();
         }
 
         /// <summary>
-        /// Resumes <see cref="Update()"/> cycle after being paused.
+        /// After a complete iteration of either <see cref="timeBasedShaders"/>
+        /// or <see cref="twilightShaders"/>, work out what to do next.
         /// </summary>
-        /// <returns>Returns <c>true</c>.</returns>
-        protected bool ResumeUpdates() => enabled = true;
-
-        /// <summary>
-        /// If the active list is empty, pause updates for a short time before trying again.
-        /// </summary>
-        /// <returns>Returns <c>false</c>.</returns>
-        private bool PauseUpdates()
+        private void DetermineWhatHappensNext()
         {
-            Invoke(nameof(ResumeUpdates), iterateTwilight ? 1.0f : 5.0f);
-            return enabled = false;
+            iterateTwilight = false;
+
+            count = timeBasedShaders.Count;
+            index = 0;
+
+            enabled = count != index;
         }
 
         /// <summary>
-        /// Determines active list to use for <see cref="Update()"/>:
-        /// <list type="bullet">
-        /// <item><see cref="twilightShaders"/> - if we just transitioned twilight</item>
-        /// <item><see cref="generalShaders"/> - at all other times</item>
-        /// </list>
+        /// <para>Sorts shaders in to categories and publishes report to log file.</para>
+        /// <para>Note: Report could be done separtely, but doing it here saves an extra loop.</para>
         /// </summary>
-        /// <returns>Returns <c>true</c> if ready for next update, otherwise <c>false</c>.</returns>
-        private bool IsReadyForNextUpdate()
+        private void SortShadersInToCategories()
         {
-            if (iterateTwilight = Singleton<SimulationManager>.instance.m_isNightTime != isNightTime)
-                isNightTime = !isNightTime;
+            var report = new AssetReporter();
 
-            index = 0;
-            count = (iterateTwilight ? twilightShaders : generalShaders).Count;
+            foreach (var shader in allShaders)
+            {
+                (shader.Info.IsToggledByTwilight ? twilightShaders : timeBasedShaders).Add(shader);
 
-            return count == 0
-                ? PauseUpdates()
-                : ResumeUpdates();
+                report.Append(shader);
+            }
+
+            report.Summary(allShaders.Count, twilightShaders.Count, timeBasedShaders.Count);
+            report.PublishToLogFile();
         }
 
         /// <summary>
@@ -235,27 +238,23 @@ namespace AdditiveShader.Manager
         /// <list type="bullet">
         /// <item><see cref="staticShaders"/> -- always on/off</item>
         /// <item><see cref="twilightShaders"/> -- on at dusk, off at dawn</item>
-        /// <item><see cref="generalShaders"/> -- other time-based on/off</item>
+        /// <item><see cref="timeBasedShaders"/> -- other time-based on/off</item>
         /// </list>
         /// </summary>
         /// <param name="capacity">The initial capacity for the lists.</param>
-        private void InitialiseShaderLists(int capacity)
+        private void PrepareShaderCategories(int capacity)
         {
-            staticShaders = new List<ShaderAsset>(capacity);
-            remoteShaders = new List<ShaderAsset>(capacity);
             twilightShaders = new List<ShaderAsset>(capacity);
-            generalShaders = new List<ShaderAsset>(capacity);
+            timeBasedShaders = new List<ShaderAsset>(capacity);
         }
 
         /// <summary>
         /// Trims excess capacity from populated lists.
         /// </summary>
-        private void TrimShaderLists()
+        private void CompactShaderCategories()
         {
-            staticShaders.TrimExcess();
-            remoteShaders.TrimExcess();
             twilightShaders.TrimExcess();
-            generalShaders.TrimExcess();
+            timeBasedShaders.TrimExcess();
         }
 
         /// <summary>
@@ -263,10 +262,9 @@ namespace AdditiveShader.Manager
         /// </summary>
         private void DisposeShaderLists()
         {
-            staticShaders = null;
-            remoteShaders = null;
+            allShaders = null;
             twilightShaders = null;
-            generalShaders = null;
+            timeBasedShaders = null;
         }
     }
 }
