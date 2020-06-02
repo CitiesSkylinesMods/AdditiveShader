@@ -52,6 +52,7 @@ namespace AdditiveShader
         /// <returns>Returns <c>true</c> if the mod is applicable, otherwise <c>false</c>.</returns>
         private static bool IsApplicable(LoadMode mode) =>
             mode == LoadMode.NewGame ||
+            mode == LoadMode.NewGameFromScenario ||
             mode == LoadMode.LoadGame;
     }
 }
