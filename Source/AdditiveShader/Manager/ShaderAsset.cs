@@ -23,7 +23,7 @@ namespace AdditiveShader.Manager
             TypeOfAsset = AssetType.Prop;
             Prop = asset;
 
-            Info = new ShaderInfo(asset.m_mesh.name, nameof(PropInfo));
+            Info = new ShaderInfo(asset.m_mesh.name, nameof(PropInfo), asset.name);
 
             asset.m_lodHasDifferentShader = false;
             asset.m_material.SetFloat("_InvFade", Info.Fade);
@@ -44,7 +44,7 @@ namespace AdditiveShader.Manager
             TypeOfAsset = AssetType.Building;
             Building = asset;
 
-            Info = new ShaderInfo(asset.m_mesh.name, nameof(BuildingInfo));
+            Info = new ShaderInfo(asset.m_mesh.name, nameof(BuildingInfo), asset.name);
 
             asset.m_lodHasDifferentShader = false;
             asset.m_lodMissing = true;
@@ -67,7 +67,7 @@ namespace AdditiveShader.Manager
             TypeOfAsset = AssetType.SubBuilding;
             SubBuilding = asset;
 
-            Info = new ShaderInfo(asset.m_mesh.name, nameof(BuildingInfoSub));
+            Info = new ShaderInfo(asset.m_mesh.name, nameof(BuildingInfoSub), asset.name);
 
             asset.m_lodHasDifferentShader = false;
             asset.m_material.SetFloat("_InvFade", Info.Fade);
@@ -89,7 +89,7 @@ namespace AdditiveShader.Manager
             TypeOfAsset = AssetType.Vehicle;
             Vehicle = asset;
 
-            Info = new ShaderInfo(asset.m_mesh.name, nameof(VehicleInfoSub));
+            Info = new ShaderInfo(asset.m_mesh.name, nameof(VehicleInfoSub), asset.name);
 
             asset.m_material.SetFloat("_InvFade", Info.Fade);
             asset.m_mesh.colors = GetMeshColors(asset.m_mesh.vertices.Length);
