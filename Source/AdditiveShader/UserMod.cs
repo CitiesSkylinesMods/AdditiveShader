@@ -1,6 +1,7 @@
 namespace AdditiveShader
 {
     using System.Diagnostics.CodeAnalysis;
+    using AdditiveShader.Manager;
     using ICities;
     using JetBrains.Annotations;
 
@@ -13,9 +14,9 @@ namespace AdditiveShader
     public class UserMod : IUserMod
     {
         /// <summary>
-        /// Gets or sets a value indicating whether the mod is currently enabled.
+        /// Gets a value indicating whether the mod is currently enabled.
         /// </summary>
-        public static bool IsEnabled { get; set; }
+        public static bool IsEnabled { get; private set; }
 
         /// <summary>
         /// Gets name of the mod, which is shown in content manager and options.
@@ -34,13 +35,13 @@ namespace AdditiveShader
         /// </summary>
         [UsedImplicitly]
         [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Game requirement.")]
-        public void OnEnabled() => IsEnabled = true;
+        protected void OnEnabled() => IsEnabled = true;
 
         /// <summary>
         /// Invoked by the game when the mod is disabled.
         /// </summary>
         [UsedImplicitly]
         [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Game requirement.")]
-        public void OnDisabled() => IsEnabled = false;
+        protected void OnDisabled() => IsEnabled = false;
     }
 }
