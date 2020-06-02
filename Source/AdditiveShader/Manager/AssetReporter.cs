@@ -40,8 +40,8 @@ namespace AdditiveShader.Manager
                 .Append(", Always On: ").Append(shader.Info.IsAlwaysOn)
                 .Append(", Remote Control: ").Append(shader.Info.IsRemotelyControlled)
                 .Append(", Overlap Midnight: ").Append(shader.Info.OverlapsMidnight)
-                .Append(", Day Time: ").Append(shader.Info.IsDayTimeOnly)
-                .Append(", Night Time: ").Append(shader.Info.IsNightTimeOnly)
+                .Append(", Day Only: ").Append(shader.Info.IsDayTimeOnly)
+                .Append(", Night Only: ").Append(shader.Info.IsNightTimeOnly)
                 .Append(", Twilight: ").Append(shader.Info.IsToggledByTwilight)
                 .AppendLine()
                 .AppendLine();
@@ -50,16 +50,14 @@ namespace AdditiveShader.Manager
         /// Add a summary to the report.
         /// </summary>
         /// <param name="countAll">Total number of shader-usuing assets.</param>
-        /// <param name="countRemoteControl">Number of remote-control shaders.</param>
         /// <param name="countTwilight">Number of twilight time-based shaders.</param>
         /// <param name="countGeneral">Number of general time-based shaders.</param>
-        internal void Summary(int countAll, int countRemoteControl, int countTwilight, int countGeneral) =>
+        internal void Summary(int countAll, int countTwilight, int countGeneral) =>
             report
                 .Append("Scanned ").Append(AssetScanner.ItemsScanned).Append(" assets ")
                 .Append("in ").Append(timer.ElapsedMilliseconds).Append("ms: ")
                 .Append("Found ").Append(countAll).Append(" additive shaders")
-                .Append(" (static: ").Append(countAll - countRemoteControl - countTwilight - countGeneral)
-                .Append(", remote control: ").Append(countRemoteControl)
+                .Append(" (static: ").Append(countAll - countTwilight - countGeneral)
                 .Append(", day/night: ").Append(countTwilight)
                 .Append(", others: ").Append(countGeneral).Append(" ) ");
 
