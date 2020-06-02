@@ -15,18 +15,16 @@ and [these scripts](https://gist.github.com/ronyx69/97a8efae47d6828f01d7d0ab8189
 LODs don't support additive shader. To work around that limitation the mod will
 disable LODs and/or increase render distance of anything that uses the shader.
 
-Buildings, in particular, can be a problem. If they contain a one prop that
+Buildings, in particular, can be a problem. If they contain a any props that
 uses the shader, the max _prop_ render distance _for that building_ will be
-increased. That setting applies to all props so it can have an impact on fps.
-So if you use a shader prop in a building, try and limit how many other props
-that building has (and ideally keep them low tri with small textures).
+increased.
 
 To reduce CPU workload to basically zero, the Additive Shader mod (from v1.5
 onwards) spreads shader visibility updates across frames, so there might be some
 delay between on/off time and the shader actually being made visible/hidden in
 the game.
 
-## Settings
+## Shader settings
 
 To make the mod recognise your mesh, the `m_mesh.name` must be in one of the
 following formats:
@@ -50,28 +48,9 @@ Where:
 * **Intensity** -- controls the light intensity of the shader
 * **tags** (optional) -- one or more tags/labels
 
-### Examples:
+#### KeyWords
 
-```
-AdditiveShader 9 17 20 2
-```
-
-That results in:
-
-* **On** = `9 AM` (`09:00`)
-* **Off** = `5 PM` (`17:00`)
-* **Fade** = `20`
-* **Intensity** = `2`
-
-```
-AdditiveShader AlwaysOn 20 2 foo bar
-```
-
-That will be always on, and is also tagged `foo` and `bar`.
-
-### keywords
-
-> Keywords feature was added in version 1.5.0
+> KeyWords feature requires version Additive Shader 1.5.0 or later
 
 The following keywords can be used to denote common on/off times:
 
@@ -79,12 +58,33 @@ The following keywords can be used to denote common on/off times:
 * `DayTime` -- shader on during day time, off during night time
 * `NightTime` -- shader off during day time, on during night time
 
-### Times
+#### Examples:
+
+To define these settings:
+
+* **On** = `9 AM` (`09:00`)
+* **Off** = `5 PM` (`17:00`)
+* **Fade** = `20`
+* **Intensity** = `2`
+
+Your `m_mesh.name` should look like this:
+
+```
+AdditiveShader 9 17 20 2
+```
+
+The following shader will be on all night, and is also tagged `foo` and `bar`:
+
+```
+AdditiveShader NightTime 20 2 foo bar
+```
+
+## Visibility settings
 
 There are three broad categories of visibility control for your shaders:
 
 * **Static** -- The shader is always on, or off
-* **Timed** -- The shader turns on and off at specific times
+* **Time-based** -- The shader turns on and off at specific times
 * **Twilight** -- The shader turns on or off at twilight
 
 #### Static shaders
@@ -98,7 +98,7 @@ To make a shader 'always on', use _one_ of the following:
 Static shaders are updated once, when your city loads. As such they do not put
 any load on the CPU.
 
-#### Timed shaders
+#### Time-based shaders
 
 To make a shader turn on and off at specific game day times:
 
@@ -122,7 +122,7 @@ been turned on!
 
 #### Twilight shaders
 
-These are the most common, where the shader turns on at dusk, and off at dawn.
+These are the most common, where the shader is either on all day or all night:
 
 * Use **Keyword** `DayTime` to make the shader visible during daylight hours
 * Use **Keyword** `NightTime` to make the shader visible during night hours
@@ -136,23 +136,23 @@ Example:
 AdditiveShader DayTime 3.5 0.9
 ```
 
-To enable backwards-compatibility with older assets, shaders are also treated
+To enable backwards-compatibility with older assets, shaders are treated
 as `NightTime` if:
 
 * Their **On** time is between `19` and `21`, (7-9 PM) _and..._
 * Their **Off** time is between `4` and `6` (4-6 AM)
 
-If you want to disable backwards-compatibility, add a `not-twilight` **tag**:
+If you want to disable backwards-compatibility, add the `not-twilight` **tag**:
 
 ```
 AdditiveShader 20 5 3.5 0.9 not-twilight
 ```
 
 Twilight shaders are processed as a batch, over several frames, so you'll see
-them turning on/off in a similar way to street lights. Updates to timed shaders
-are paused while the twilight shaders are being processed.
+them turning on/off in a similar way to street lights. Updates to time-based
+shaders are paused while the twilight shaders are being processed.
 
-### Fade/Intensity
+## Fade and Intensity
 
 Additive shader fades near other objects. The **Fade** value controls that:
 
@@ -168,7 +168,7 @@ The **Intensity** value sets the light multiplier:
 * Lower is darker, higher is brighter
 * Values above `1` may cause a bloom effect
 
-### Tags
+## Tags
 
 Tags are arbitrary keywords that you can add to the end of the mesh name:
 
