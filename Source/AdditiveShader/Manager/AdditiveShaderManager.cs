@@ -75,7 +75,7 @@ namespace AdditiveShader.Manager
         [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
         public bool AddRemoteGroup(Guid group, HashSet<string> tags)
         {
-            if (allShaders.Count == 0 || remoteGroups.ContainsKey(group) || tags == null || tags.Count == 0)
+            if (allShaders == null || allShaders.Count == 0 || tags == null || tags.Count == 0 || remoteGroups?.ContainsKey(group) != false)
                 return false;
 
             var shaders = new List<ShaderAsset>(allShaders.Count);
@@ -99,7 +99,7 @@ namespace AdditiveShader.Manager
         [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
         public void RemoveRemoteGroups(ICollection<Guid> groups)
         {
-            if (groups == null || groups.Count == 0)
+            if (groups == null || groups.Count == 0 || remoteGroups == null)
                 return;
 
             foreach (var group in groups)
@@ -115,7 +115,7 @@ namespace AdditiveShader.Manager
         [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
         public void SetRemoteGroupVisibility(Guid group, bool visible)
         {
-            if (remoteGroups.TryGetValue(group, out var shaders))
+            if (remoteGroups != null && remoteGroups.TryGetValue(group, out var shaders))
                 foreach (var shader in shaders)
                     shader.SetVisible(visible);
         }
@@ -268,8 +268,7 @@ namespace AdditiveShader.Manager
         /// <summary>
         /// Initialises shader lists:
         /// <list type="bullet">
-        /// <item><see cref="staticShaders"/> -- always on/off</item>
-        /// <item><see cref="twilightShaders"/> -- on at dusk, off at dawn</item>
+        /// <item><see cref="twilightShaders"/> -- toggled at twilight (dusk and dawn)</item>
         /// <item><see cref="timeBasedShaders"/> -- other time-based on/off</item>
         /// </list>
         /// </summary>
