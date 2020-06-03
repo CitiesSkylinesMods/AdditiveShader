@@ -35,13 +35,13 @@ namespace AdditiveShader
         /// </summary>
         [UsedImplicitly]
         [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Game requirement.")]
-        protected void OnEnabled() => IsEnabled = true;
+        public void OnEnabled() => IsEnabled = true;
 
         /// <summary>
         /// Invoked by the game when the mod is disabled.
         /// </summary>
         [UsedImplicitly]
         [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Game requirement.")]
-        protected void OnDisabled() => IsEnabled = false;
+        public void OnDisabled() => IsEnabled = false;
     }
 }
