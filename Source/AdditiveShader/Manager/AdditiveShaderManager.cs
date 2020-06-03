@@ -2,6 +2,7 @@ namespace AdditiveShader.Manager
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using ColossalFramework;
     using JetBrains.Annotations;
@@ -123,8 +124,11 @@ namespace AdditiveShader.Manager
         /// Initialises the manager.
         /// </summary>
         [UsedImplicitly]
+        [SuppressMessage("Maintainability", "AV1500:Member or local function contains too many statements")]
         protected void Start()
         {
+            AssetReporter.Timer = Stopwatch.StartNew();
+
             allShaders = AssetScanner.ListShaderAssets();
 
             if (allShaders.Count == 0)
@@ -136,7 +140,7 @@ namespace AdditiveShader.Manager
             remoteGroups = new Dictionary<Guid, IEnumerable<ShaderAsset>>();
 
             PrepareShaderCategories(allShaders.Count);
-            SortShadersInToCategories();
+            SortShadersInToCategories(); // also generates report
             CompactShaderCategories();
 
             enabled = timeBasedShaders.Count != 0;
@@ -144,18 +148,19 @@ namespace AdditiveShader.Manager
             if (twilightShaders.Count != 0)
             {
                 InvokeRepeating(nameof(CheckForTwilight), TWILIGHT_CHECK_INTERVAL, TWILIGHT_CHECK_INTERVAL);
-                CheckForTwilight();
+                CheckForTwilight(true);
             }
         }
 
         /// <summary>
         /// Checks to see if we have crossed twilight boundary.
         /// </summary>
-        protected void CheckForTwilight()
+        /// <param name="force">On startup this is set true to ensure twilight buildings get set correctly.</param>
+        protected void CheckForTwilight(bool force = false)
         {
             bool isNightTimeNow = Singleton<SimulationManager>.instance.m_isNightTime;
 
-            if (isNightTime != isNightTimeNow)
+            if (force || isNightTime != isNightTimeNow)
             {
                 isNightTime = isNightTimeNow;
 
@@ -211,20 +216,47 @@ namespace AdditiveShader.Manager
             count = timeBasedShaders.Count;
             index = 0;
 
-            enabled = count != index;
+            enabled = count > index;
+        }
+
+        /// <summary>
+        /// Updates the light intensity for the shader to whatever it should be at this moment in time.
+        /// </summary>
+        /// <param name="shader">The shader to refresh.</param>
+        [SuppressMessage("Maintainability", "AV1537:If-else-if construct should end with an unconditional else clause", Justification = "Intentional.")]
+        private void RefreshShader(ShaderAsset shader)
+        {
+            if (shader.Info.IsToggledByTwilight)
+            {
+                UnityEngine.Debug.Log($"[AdditiveShader] - {shader.TypeOfAsset} Refresh by twilight: {isNightTime}");
+                shader.SetVisibleByTwilight(isNightTime);
+            }
+            else if (!shader.Info.IsStatic)
+            {
+                UnityEngine.Debug.Log($"[AdditiveShader] - {shader.TypeOfAsset} Refresh by time: {Singleton<SimulationManager>.instance.m_currentDayTimeHour}");
+                shader.SetVisibleByTime(Singleton<SimulationManager>.instance.m_currentDayTimeHour);
+            }
+            else if (shader.Info.IsAlwaysOn)
+            {
+                UnityEngine.Debug.Log($"[AdditiveShader] - {shader.TypeOfAsset} AlwaysOn");
+                shader.SetVisible(true);
+            }
         }
 
         /// <summary>
         /// <para>Sorts shaders in to categories and publishes report to log file.</para>
         /// <para>Note: Report could be done separtely, but doing it here saves an extra loop.</para>
         /// </summary>
+        [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
         private void SortShadersInToCategories()
         {
             var report = new AssetReporter();
 
             foreach (var shader in allShaders)
             {
-                (shader.Info.IsToggledByTwilight ? twilightShaders : timeBasedShaders).Add(shader);
+                if (!shader.Info.IsStatic)
+                    (shader.Info.IsToggledByTwilight ? twilightShaders : timeBasedShaders)
+                        .Add(shader);
 
                 report.Append(shader);
             }
