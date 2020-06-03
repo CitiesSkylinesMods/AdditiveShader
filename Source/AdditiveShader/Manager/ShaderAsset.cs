@@ -29,7 +29,7 @@ namespace AdditiveShader.Manager
             asset.m_material.SetFloat("_InvFade", Info.Fade);
             asset.m_lodRenderDistance = asset.m_maxRenderDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
 
-            SetVisible(Info.IsAlwaysOn);
+            SetVisible(Info.IsAlwaysOn, true);
         }
 
         /// <summary>
@@ -52,7 +52,7 @@ namespace AdditiveShader.Manager
             asset.m_mesh.colors = GetMeshColors(asset.m_mesh.vertices.Length);
             asset.m_maxLodDistance = asset.m_minLodDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
 
-            SetVisible(Info.IsAlwaysOn);
+            SetVisible(Info.IsAlwaysOn, true);
         }
 
         /// <summary>
@@ -74,7 +74,7 @@ namespace AdditiveShader.Manager
             asset.m_mesh.colors = GetMeshColors(asset.m_mesh.vertices.Length);
             asset.m_maxLodDistance = asset.m_minLodDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
 
-            SetVisible(Info.IsAlwaysOn);
+            SetVisible(Info.IsAlwaysOn, true);
         }
 
         /// <summary>
@@ -95,7 +95,7 @@ namespace AdditiveShader.Manager
             asset.m_mesh.colors = GetMeshColors(asset.m_mesh.vertices.Length);
             asset.m_lodRenderDistance = asset.m_maxRenderDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
 
-            SetVisible(Info.IsAlwaysOn);
+            SetVisible(Info.IsAlwaysOn, true);
         }
 
         /// <summary>
@@ -127,35 +127,35 @@ namespace AdditiveShader.Manager
         /// </list>
         /// </para>
         /// </summary>
-        private AssetType TypeOfAsset { get; }
+        public AssetType TypeOfAsset { get; }
 
         /// <summary>
         /// Gets the <see cref="PropInfo"/> associated with this instance, if applicable.
         /// </summary>
-        private PropInfo Prop { get; }
+        public PropInfo Prop { get; }
 
         /// <summary>
         /// Gets the <see cref="BuildingInfo"/> associated with this instance, if applicable.
         /// </summary>
-        private BuildingInfo Building { get; }
+        public BuildingInfo Building { get; }
 
         /// <summary>
         /// Gets the <see cref="BuildingInfoSub"/> associated with this instance, if applicalbe.
         /// </summary>
-        private BuildingInfoSub SubBuilding { get; }
+        public BuildingInfoSub SubBuilding { get; }
 
         /// <summary>
         /// Gets the <see cref="VehicleInfoSub"/> associated with this instance, if applicable.
         /// </summary>
-        private VehicleInfoSub Vehicle { get; }
+        public VehicleInfoSub Vehicle { get; }
 
         /// <inheritdoc/>
         public override string ToString() => TypeOfAsset switch
         {
-            AssetType.Prop        => $"ShaderAsset(PropInfo {Prop.name})",
-            AssetType.Building    => $"ShaderAsset(BuildingInfo {Building.name})",
-            AssetType.SubBuilding => $"ShaderAsset(BuildingInfoSub {SubBuilding.name})",
-            AssetType.Vehicle     => $"ShaderAsset(VehicleInfoSub {Vehicle.name})",
+            AssetType.Prop        => $"PropInfo        {Prop.name}",
+            AssetType.Building    => $"BuildingInfo    {Building.name}",
+            AssetType.SubBuilding => $"BuildingInfoSub {SubBuilding.name}",
+            AssetType.Vehicle     => $"VehicleInfoSub  {Vehicle.name}",
 
             _ => "ShaderAsset(null) Error",
         };
@@ -191,11 +191,12 @@ namespace AdditiveShader.Manager
         /// Show or hide the additive shader for this asset.
         /// </summary>
         /// <param name="visible">If <c>true</c>, the shader will be shown, otherwise it will be hidden.</param>
+        /// <param name="force">If <c>true</c>, don't check current state. Defaults to <c>false</c>.</param>
         [SuppressMessage("Maintainability", "AV1536:Non-exhaustive switch statement requires a default case clause")]
         [SuppressMessage("Maintainability", "AV1535:Missing block in case or default clause of switch statement")]
-        public void SetVisible(bool visible)
+        public void SetVisible(bool visible, bool force = false)
         {
-            if (IsVisible == visible)
+            if (!force && IsVisible == visible)
                 return;
 
             IsVisible = visible;
