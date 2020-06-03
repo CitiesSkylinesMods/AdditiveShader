@@ -230,7 +230,7 @@ namespace AdditiveShader.Manager
         public HashSet<string> HashTags { get; }
 
         /// <inheritdoc/>
-        public override string ToString() => $"ShaderInfo('{meshName}')";
+        public override string ToString() => meshName;
 
         private static bool IsDuringSunrise(float time) => SUNRISE_START < time && time < SUNRISE_END;
 
@@ -262,6 +262,5 @@ namespace AdditiveShader.Manager
 
             if (IsToggledByTwilight) HashTags.Add("Twilight" );
         }
-
     }
 }
