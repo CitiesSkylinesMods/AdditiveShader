@@ -2,6 +2,7 @@ namespace AdditiveShader.Manager
 {
     using System.Diagnostics;
     using System.Text;
+    using AdditiveShader.ExtensionMethods;
 
     /// <summary>
     /// The <see cref="AssetReporter"/> is used by <see cref="AdditiveShaderManager"/> to log
@@ -9,6 +10,10 @@ namespace AdditiveShader.Manager
     /// </summary>
     public class AssetReporter
     {
+        private const string YES = "Yes";
+
+        private const string NO  = "-";
+
         private readonly StringBuilder report;
 
         /// <summary>
@@ -38,17 +43,15 @@ namespace AdditiveShader.Manager
         /// <param name="shader">The shader-using asset to report on.</param>
         internal void Append(ShaderAsset shader) =>
             report
-                .AppendFormat(
-                    "{0} {1} {2} {3} {4} {5} {6} {7} '{8}'",
-                    (shader.Info.IsStatic             ? "Yes" : "-").PadRight(6),
-                    (shader.Info.IsAlwaysOn           ? "Yes" : "-").PadRight(8),
-                    (shader.Info.IsRemotelyControlled ? "Yes" : "-").PadRight(6),
-                    (shader.Info.OverlapsMidnight     ? "Yes" : "-").PadRight(7),
-                    (shader.Info.IsDayTimeOnly        ? "Yes" : "-").PadRight(7),
-                    (shader.Info.IsNightTimeOnly      ? "Yes" : "-").PadRight(9),
-                    (shader.Info.IsToggledByTwilight  ? "Yes" : "-").PadRight(8),
-                    shader,
-                    shader.Info)
+                .AppendRightPad(shader.Info.IsStatic             ? YES : NO, 6)
+                .AppendRightPad(shader.Info.IsAlwaysOn           ? YES : NO, 8)
+                .AppendRightPad(shader.Info.IsRemotelyControlled ? YES : NO, 6)
+                .AppendRightPad(shader.Info.OverlapsMidnight     ? YES : NO, 7)
+                .AppendRightPad(shader.Info.IsDayTimeOnly        ? YES : NO, 7)
+                .AppendRightPad(shader.Info.IsNightTimeOnly      ? YES : NO, 9)
+                .AppendRightPad(shader.Info.IsToggledByTwilight  ? YES : NO, 8)
+                .Append(shader)
+                .Append("'").Append(shader.Info).Append("'")
                 .AppendLine();
 
         /// <summary>
