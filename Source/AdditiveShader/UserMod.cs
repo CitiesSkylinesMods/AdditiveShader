@@ -1,7 +1,6 @@
 namespace AdditiveShader
 {
     using System.Diagnostics.CodeAnalysis;
-    using AdditiveShader.Manager;
     using ICities;
     using JetBrains.Annotations;
 
@@ -34,14 +33,14 @@ namespace AdditiveShader
         /// Invoked by the game when the mod is enabled.
         /// </summary>
         [UsedImplicitly]
-        [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Game requirement.")]
+        [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Game API.")]
         public void OnEnabled() => IsEnabled = true;
 
         /// <summary>
         /// Invoked by the game when the mod is disabled.
         /// </summary>
         [UsedImplicitly]
-        [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Game requirement.")]
+        [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Game API.")]
         public void OnDisabled() => IsEnabled = false;
     }
 }
