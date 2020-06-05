@@ -201,21 +201,16 @@ namespace AdditiveShader.Manager
 
             IsVisible = visible;
 
-            switch (TypeOfAsset)
+            var material = TypeOfAsset switch
             {
-                case AssetType.Prop:
-                    Prop.m_material.SetFloat("_Intensity", visible ? Info.Intensity : 0f);
-                    break;
-                case AssetType.Building:
-                    Building.m_material.SetFloat("_Intensity", visible ? Info.Intensity : 0f);
-                    break;
-                case AssetType.SubBuilding:
-                    SubBuilding.m_material.SetFloat("_Intensity", visible ? Info.Intensity : 0f);
-                    break;
-                case AssetType.Vehicle:
-                    Vehicle.m_material.SetFloat("_Intensity", visible ? Info.Intensity : 0f);
-                    break;
-            }
+                AssetType.Prop        => Prop.m_material,
+                AssetType.Building    => Building.m_material,
+                AssetType.SubBuilding => SubBuilding.m_material,
+                AssetType.Vehicle     => Vehicle.m_material,
+                _ => throw new IndexOutOfRangeException("Invalid AssetType"),
+            };
+
+            material.SetFloat("_Intensity", visible ? Info.Intensity : 0f);
         }
 
         /// <summary>
