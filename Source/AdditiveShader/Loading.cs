@@ -48,8 +48,8 @@ namespace AdditiveShader
         /// <summary>
         /// Determines whether the <paramref name="mode"/> is applicable to this mod.
         /// </summary>
-        /// <param name="mode">The <see cref="LoadMode"/> applicable to this loading extension.</param>
-        /// <returns>Returns <c>true</c> if the mod is applicable, otherwise <c>false</c>.</returns>
+        /// <param name="mode">The <see cref="LoadMode"/> applicable to this instance.</param>
+        /// <returns>Returns <c>true</c> if applicable, otherwise <c>false</c>.</returns>
         private static bool IsApplicable(LoadMode mode) =>
             mode == LoadMode.NewGame ||
             mode == LoadMode.NewGameFromScenario ||
