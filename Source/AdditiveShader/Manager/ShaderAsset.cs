@@ -11,6 +11,9 @@ namespace AdditiveShader.Manager
     /// </summary>
     public class ShaderAsset
     {
+        [SuppressMessage("StyleCop.CSharp.NamingRules", "SA1310:Field names should not contain underscore")]
+        private const bool FORCE_UPDATE = true;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ShaderAsset"/> class
         /// for a <see cref="PropInfo"/> asset.
@@ -29,7 +32,7 @@ namespace AdditiveShader.Manager
             asset.m_material.SetFloat("_InvFade", Info.Fade);
             asset.m_lodRenderDistance = asset.m_maxRenderDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
 
-            SetVisible(Info.IsAlwaysOn, true);
+            SetVisible(Info.IsAlwaysOn, FORCE_UPDATE);
         }
 
         /// <summary>
@@ -52,7 +55,7 @@ namespace AdditiveShader.Manager
             asset.m_mesh.colors = GetMeshColors(asset.m_mesh.vertices.Length);
             asset.m_maxLodDistance = asset.m_minLodDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
 
-            SetVisible(Info.IsAlwaysOn, true);
+            SetVisible(Info.IsAlwaysOn, FORCE_UPDATE);
         }
 
         /// <summary>
@@ -74,7 +77,7 @@ namespace AdditiveShader.Manager
             asset.m_mesh.colors = GetMeshColors(asset.m_mesh.vertices.Length);
             asset.m_maxLodDistance = asset.m_minLodDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
 
-            SetVisible(Info.IsAlwaysOn, true);
+            SetVisible(Info.IsAlwaysOn, FORCE_UPDATE);
         }
 
         /// <summary>
@@ -95,7 +98,7 @@ namespace AdditiveShader.Manager
             asset.m_mesh.colors = GetMeshColors(asset.m_mesh.vertices.Length);
             asset.m_lodRenderDistance = asset.m_maxRenderDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
 
-            SetVisible(Info.IsAlwaysOn, true);
+            SetVisible(Info.IsAlwaysOn, FORCE_UPDATE);
         }
 
         /// <summary>
