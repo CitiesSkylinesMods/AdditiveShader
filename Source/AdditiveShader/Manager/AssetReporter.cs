@@ -43,13 +43,13 @@ namespace AdditiveShader.Manager
         /// <param name="shader">The shader-using asset to report on.</param>
         internal void Append(ShaderAsset shader) =>
             report
-                .AppendRightPad(shader.Info.IsStatic             ? YES : NO, 6)
-                .AppendRightPad(shader.Info.IsAlwaysOn           ? YES : NO, 8)
-                .AppendRightPad(shader.Info.IsRemotelyControlled ? YES : NO, 6)
-                .AppendRightPad(shader.Info.OverlapsMidnight     ? YES : NO, 7)
-                .AppendRightPad(shader.Info.IsDayTimeOnly        ? YES : NO, 7)
-                .AppendRightPad(shader.Info.IsNightTimeOnly      ? YES : NO, 9)
-                .AppendRightPad(shader.Info.IsToggledByTwilight  ? YES : NO, 8)
+                .AppendRightPad(shader.Info.IsStatic             ? YES : NO, 7)
+                .AppendRightPad(shader.Info.IsAlwaysOn           ? YES : NO, 9)
+                .AppendRightPad(shader.Info.IsRemotelyControlled ? YES : NO, 7)
+                .AppendRightPad(shader.Info.OverlapsMidnight     ? YES : NO, 8)
+                .AppendRightPad(shader.Info.IsDayTimeOnly        ? YES : NO, 8)
+                .AppendRightPad(shader.Info.IsNightTimeOnly      ? YES : NO, 10)
+                .AppendRightPad(shader.Info.IsToggledByTwilight  ? YES : NO, 9)
                 .Append(shader)
                 .Append(" '").Append(shader.Info).AppendLine("'");
 
