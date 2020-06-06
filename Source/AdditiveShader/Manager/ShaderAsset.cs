@@ -9,10 +9,36 @@ namespace AdditiveShader.Manager
     /// <para>Represents an asset which uses the additive shader.</para>
     /// <para>See <see cref="https://cslmodding.info/mod/additive-shader/"/> for details.</para>
     /// </summary>
+    [SuppressMessage("StyleCop.CSharp.NamingRules", "SA1310:Field names should not contain underscore")]
     public class ShaderAsset
     {
-        [SuppressMessage("StyleCop.CSharp.NamingRules", "SA1310:Field names should not contain underscore")]
+        /// <summary>
+        /// Used to force visibility update during instantiation.
+        /// </summary>
         private const bool FORCE_UPDATE = true;
+
+        /// <summary>
+        /// Fake <c>m_mesh.name</c> for <see cref="AssetType.Container"/> assets.
+        /// </summary>
+        /// <remarks>
+        /// It will be passed to constructor of <see cref="ShaderInfo"/> class
+        /// which will treat it as a profile KeyWord.
+        /// </remarks>
+        private const string CONTAINER_BUILDING = "AdditiveShader Container 0 0 container-building";
+
+        /// <summary>
+        /// If a building contains a prop which uses additive shader,
+        /// the <see cref="BuildingInfo.m_maxPropDistance"/> must be
+        /// increased to prevent its props using LOD.
+        /// </summary>
+        private const float EXTENDED_BUILDING_PROP_VISIBILITY_DISTANCE = 25000;
+
+        /// <summary>
+        /// Asset mesh color (<c>m_mesh.colors[]</c>) - required to
+        /// accurately display the additive shader. Should never change.
+        /// </summary>
+        [SuppressMessage("StyleCop.CSharp.NamingRules", "SA1306:Field names should begin with lower-case letter", Justification = "Treat like a constant.")]
+        private readonly Color MESH_COLOR = Color.white;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ShaderAsset"/> class
@@ -20,7 +46,6 @@ namespace AdditiveShader.Manager
         /// </summary>
         /// <param name="asset">The <see cref="PropInfo"/> which uses the shader.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="asset"/> is <c>null</c>.</exception>
-        [SuppressMessage("Maintainability", "AV1522:Assign each property, field, parameter or variable in a separate statement", Justification = "Intentional.")]
         internal ShaderAsset(PropInfo asset)
         {
             TypeOfAsset = AssetType.Prop;
@@ -30,7 +55,9 @@ namespace AdditiveShader.Manager
 
             asset.m_lodHasDifferentShader = false;
             asset.m_material.SetFloat("_InvFade", Info.Fade);
-            asset.m_lodRenderDistance = asset.m_maxRenderDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
+
+            CachedRenderDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
+            ApplyCachedRenderDistance();
 
             SetVisible(Info.IsAlwaysOn, FORCE_UPDATE);
         }
@@ -40,8 +67,8 @@ namespace AdditiveShader.Manager
         /// for a <see cref="BuildingInfo"/> asset.
         /// </summary>
         /// <param name="asset">The <see cref="BuildingInfo"/> which uses the shader.</param>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="asset"/> is <c>null</c>.</exception>
-        [SuppressMessage("Maintainability", "AV1522:Assign each property, field, parameter or variable in a separate statement", Justification = "Intentional.")]
+        /// <exception cref="ArgumentNullException">Thrown if asset <c>m_mesh.name</c> is <c>null</c>.</exception>
+        /// <exception cref="FormatException">Thrown if asset <c>m_mesh.name</c> format is invalid.</exception>
         internal ShaderAsset(BuildingInfo asset)
         {
             TypeOfAsset = AssetType.Building;
@@ -53,9 +80,42 @@ namespace AdditiveShader.Manager
             asset.m_lodMissing = true;
             asset.m_material.SetFloat("_InvFade", Info.Fade);
             asset.m_mesh.colors = GetMeshColors(asset.m_mesh.vertices.Length);
-            asset.m_maxLodDistance = asset.m_minLodDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
+
+            CachedRenderDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
+            ApplyCachedRenderDistance();
 
             SetVisible(Info.IsAlwaysOn, FORCE_UPDATE);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ShaderAsset"/> class
+        /// for a <see cref="BuildingInfo"/> asset which contains a shader-using
+        /// <see cref="PropInfo"/> asset.
+        /// </summary>
+        /// <remarks>
+        /// This is distinct from the other ShaderAsset types in that the building
+        /// itself is not usually directly shader-using (if it is, a separate
+        /// ShaderAsset will be created for it).
+        /// </remarks>
+        /// <param name="asset">The <see cref="BuildingInfo"/> which uses the shader.</param>
+        /// <param name="isContainer">Ignored - just there to differentiate the overload.</param>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="isContainer"/> is not <c>true</c>.</exception>
+        /// <exception cref="ArgumentNullException">Thrown if asset <c>m_mesh.name</c> is <c>null</c>.</exception>
+        /// <exception cref="FormatException">Thrown if asset <c>m_mesh.name</c> format is invalid.</exception>
+        internal ShaderAsset(BuildingInfo asset, bool isContainer)
+        {
+            if (!isContainer)
+                throw new ArgumentOutOfRangeException(nameof(isContainer), "This constructor can only be used for buildings that contain shader-using props.");
+
+            TypeOfAsset = AssetType.Container;
+            Building = asset;
+
+            IsContainer = true;
+
+            Info = new ShaderInfo(CONTAINER_BUILDING, nameof(BuildingInfo), asset.name);
+
+            CachedRenderDistance = EXTENDED_BUILDING_PROP_VISIBILITY_DISTANCE;
+            ApplyCachedRenderDistance();
         }
 
         /// <summary>
@@ -63,8 +123,8 @@ namespace AdditiveShader.Manager
         /// for a <see cref="BuildingInfoSub"/> asset.
         /// </summary>
         /// <param name="asset">The <see cref="BuildingInfoSub"/> which uses the shader.</param>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="asset"/> is <c>null</c>.</exception>
-        [SuppressMessage("Maintainability", "AV1522:Assign each property, field, parameter or variable in a separate statement", Justification = "Intentional.")]
+        /// <exception cref="ArgumentNullException">Thrown if asset <c>m_mesh.name</c> is <c>null</c>.</exception>
+        /// <exception cref="FormatException">Thrown if asset <c>m_mesh.name</c> format is invalid.</exception>
         internal ShaderAsset(BuildingInfoSub asset)
         {
             TypeOfAsset = AssetType.SubBuilding;
@@ -75,7 +135,9 @@ namespace AdditiveShader.Manager
             asset.m_lodHasDifferentShader = false;
             asset.m_material.SetFloat("_InvFade", Info.Fade);
             asset.m_mesh.colors = GetMeshColors(asset.m_mesh.vertices.Length);
-            asset.m_maxLodDistance = asset.m_minLodDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
+
+            CachedRenderDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
+            ApplyCachedRenderDistance();
 
             SetVisible(Info.IsAlwaysOn, FORCE_UPDATE);
         }
@@ -85,8 +147,8 @@ namespace AdditiveShader.Manager
         /// for a <see cref="VehicleInfoSub"/> asset.
         /// </summary>
         /// <param name="asset">The <see cref="VehicleInfoSub"/> which uses the shader.</param>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="asset"/> is <c>null</c>.</exception>
-        [SuppressMessage("Maintainability", "AV1522:Assign each property, field, parameter or variable in a separate statement", Justification = "Intentional.")]
+        /// <exception cref="ArgumentNullException">Thrown if asset <c>m_mesh.name</c> is <c>null</c>.</exception>
+        /// <exception cref="FormatException">Thrown if asset <c>m_mesh.name</c> format is invalid.</exception>
         internal ShaderAsset(VehicleInfoSub asset)
         {
             TypeOfAsset = AssetType.Vehicle;
@@ -96,10 +158,17 @@ namespace AdditiveShader.Manager
 
             asset.m_material.SetFloat("_InvFade", Info.Fade);
             asset.m_mesh.colors = GetMeshColors(asset.m_mesh.vertices.Length);
-            asset.m_lodRenderDistance = asset.m_maxRenderDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
+
+            CachedRenderDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
+            ApplyCachedRenderDistance();
 
             SetVisible(Info.IsAlwaysOn, FORCE_UPDATE);
         }
+
+        /// <summary>
+        /// Gets a value indicating whether this asset is just a container for another shader-using asset.
+        /// </summary>
+        public bool IsContainer { get; }
 
         /// <summary>
         /// <para>Gets a value indicating whether the additive shader for the asset is currently visible.</para>
@@ -123,10 +192,10 @@ namespace AdditiveShader.Manager
         /// <para>
         /// Depending on the type, the asset will be stored in one of the following members:
         /// <list type="bullet">
-        /// <item><see cref="Prop"/></item>
-        /// <item><see cref="Building"/></item>
-        /// <item><see cref="SubBuilding"/></item>
-        /// <item><see cref="Vehicle"/></item>
+        /// <item><see cref="Prop"/></item> -- for <see cref="AssetType.Prop"/>
+        /// <item><see cref="Building"/></item> -- for <see cref="AssetType.Building"/> or <see cref="AssetType.Container"/>
+        /// <item><see cref="SubBuilding"/></item> -- for <see cref="AssetType.SubBuilding"/>
+        /// <item><see cref="Vehicle"/></item> -- for <see cref="AssetType.Vehicle"/>
         /// </list>
         /// </para>
         /// </summary>
@@ -152,11 +221,17 @@ namespace AdditiveShader.Manager
         /// </summary>
         public VehicleInfoSub Vehicle { get; }
 
+        /// <summary>
+        /// Gets a cached render distance applicable to this asset.
+        /// </summary>
+        private float CachedRenderDistance { get; }
+
         /// <inheritdoc/>
         public override string ToString() => TypeOfAsset switch
         {
             AssetType.Prop        => $"PropInfo        {Prop.name}",
             AssetType.Building    => $"BuildingInfo    {Building.name}",
+            AssetType.Container   => $"BuildingInfo[C] {Building.name}",
             AssetType.SubBuilding => $"BuildingInfoSub {SubBuilding.name}",
             AssetType.Vehicle     => $"VehicleInfoSub  {Vehicle.name}",
 
@@ -195,11 +270,9 @@ namespace AdditiveShader.Manager
         /// </summary>
         /// <param name="visible">If <c>true</c>, the shader will be shown, otherwise it will be hidden.</param>
         /// <param name="force">If <c>true</c>, don't check current state. Defaults to <c>false</c>.</param>
-        [SuppressMessage("Maintainability", "AV1536:Non-exhaustive switch statement requires a default case clause")]
-        [SuppressMessage("Maintainability", "AV1535:Missing block in case or default clause of switch statement")]
         public void SetVisible(bool visible, bool force = false)
         {
-            if (!force && IsVisible == visible)
+            if (IsContainer || !force && IsVisible == visible)
                 return;
 
             IsVisible = visible;
@@ -217,17 +290,53 @@ namespace AdditiveShader.Manager
         }
 
         /// <summary>
+        /// Applies cached render distance(s) as applicable to the asset type,
+        /// unless the asset already defines larger value.
+        /// </summary>
+        /// <remarks>
+        /// Lights are visible from a long distance, so it would be
+        /// obvious if they suddenly disappear.
+        /// </remarks>
+        [SuppressMessage("Maintainability", "AV1500:Member or local function contains too many statements")]
+        [SuppressMessage("Maintainability", "AV1536:Non-exhaustive switch statement requires a default case clause", Justification = "Intentional.")]
+        public void ApplyCachedRenderDistance()
+        {
+            switch (TypeOfAsset)
+            {
+                case AssetType.Prop:
+                    Prop.m_lodRenderDistance = Mathf.Max(Prop.m_lodRenderDistance, CachedRenderDistance);
+                    Prop.m_maxRenderDistance = Mathf.Max(Prop.m_maxRenderDistance, CachedRenderDistance);
+                    return;
+                case AssetType.Building:
+                    Building.m_maxLodDistance = Mathf.Max(Building.m_maxLodDistance, CachedRenderDistance);
+                    Building.m_minLodDistance = Mathf.Max(Building.m_minLodDistance, CachedRenderDistance);
+                    return;
+                case AssetType.Container:
+                    Building.m_maxPropDistance = Mathf.Max(Building.m_maxPropDistance, CachedRenderDistance);
+                    return;
+                case AssetType.SubBuilding:
+                    SubBuilding.m_maxLodDistance = Mathf.Max(SubBuilding.m_maxLodDistance, CachedRenderDistance);
+                    SubBuilding.m_minLodDistance = Mathf.Max(SubBuilding.m_minLodDistance, CachedRenderDistance);
+                    return;
+                case AssetType.Vehicle:
+                    Vehicle.m_lodRenderDistance = Mathf.Max(Vehicle.m_lodRenderDistance, CachedRenderDistance);
+                    Vehicle.m_maxRenderDistance = Mathf.Max(Vehicle.m_maxRenderDistance, CachedRenderDistance);
+                    return;
+            }
+        }
+
+        /// <summary>
         /// Returns an array filled with <see cref="Color.white"/>.
         /// </summary>
         /// <param name="count">The size of the array (number of mesh vertices).</param>
         /// <returns>An array of specified size filled with white color.</returns>
-        [SuppressMessage("Member Design", "AV1130:Return type in method signature should be a collection interface instead of a concrete type", Justification = "Game requirement.")]
+        [SuppressMessage("Member Design", "AV1130:Return type in method signature should be a collection interface instead of a concrete type", Justification = "Game API.")]
         private Color[] GetMeshColors(int count)
         {
             var colors = new Color[count];
 
             for (int index = 0; index < count; index++)
-                colors[index] = Color.white;
+                colors[index] = MESH_COLOR;
 
             return colors;
         }

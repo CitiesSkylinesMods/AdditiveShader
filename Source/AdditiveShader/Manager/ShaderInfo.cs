@@ -51,6 +51,7 @@ namespace AdditiveShader.Manager
             { "RemoteControl", new ShaderInfo(-1     , -1     , true , false, true , false, false, false, false) },
             { "DayTime"      , new ShaderInfo(SUNRISE, SUNSET , false, false, false, false, true , true , false) },
             { "NightTime"    , new ShaderInfo(SUNSET , SUNRISE, false, false, false, true , true , false, true ) },
+            { "Container"    , new ShaderInfo(0f     , 24f    , false, true , false, false, false, false, false) }, // AssetType.Container
         };
 
         /// <summary>

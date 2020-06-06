@@ -24,7 +24,7 @@ namespace AdditiveShader.Manager
             report = new StringBuilder(2048);
 
             report
-                .AppendLine("[AdditiveShader] Assets using shader:")
+                .AppendLine("[AdditiveShader] Assets Report:")
                 .AppendLine()
                 .AppendLine("Static AlwaysOn Remote OverMid DayOnly NightOnly Twilight Type            Name 'm_mesh.name'")
                 .Append('-', 100)
@@ -51,8 +51,7 @@ namespace AdditiveShader.Manager
                 .AppendRightPad(shader.Info.IsNightTimeOnly      ? YES : NO, 9)
                 .AppendRightPad(shader.Info.IsToggledByTwilight  ? YES : NO, 8)
                 .Append(shader)
-                .Append("'").Append(shader.Info).Append("'")
-                .AppendLine();
+                .Append(" '").Append(shader.Info).AppendLine("'");
 
         /// <summary>
         /// Add a summary to the report.

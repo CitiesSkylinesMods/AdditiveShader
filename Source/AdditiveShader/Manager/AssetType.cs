@@ -29,5 +29,11 @@ namespace AdditiveShader.Manager
         /// A <see cref="VehicleInfoSub"/> asset.
         /// </summary>
         Vehicle = 1 << 3,
+
+        /// <summary>
+        /// A <see cref="BuildingInfo"/> asset which contains
+        /// a shader-using <see cref="PropInfo"/> asset.
+        /// </summary>
+        Container = 1 << 4,
     }
 }

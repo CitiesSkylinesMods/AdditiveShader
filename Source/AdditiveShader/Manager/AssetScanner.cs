@@ -19,17 +19,9 @@ namespace AdditiveShader.Manager
         private const string TOKEN = "AdditiveShader";
 
         /// <summary>
-        /// If a building contains a prop which uses additive shader,
-        /// the <see cref="BuildingInfo.m_maxPropDistance"/> must be
-        /// increased to prevent its props using LOD.
-        /// </summary>
-        [SuppressMessage("StyleCop.CSharp.NamingRules", "SA1310:Field names should not contain underscore")]
-        private const float EXTENDED_BUILDING_PROP_VISIBILITY_DISTANCE = 25000;
-
-        /// <summary>
         /// Gets the total number of items scanned, regardless of whether they use additive shader.
         /// </summary>
-        public static ulong ItemsScanned { get; private set; }
+        public static int ItemsScanned { get; private set; }
 
         /// <summary>
         /// Scans supported asset types, converting any that use the shader to
@@ -41,14 +33,14 @@ namespace AdditiveShader.Manager
         {
             ItemsScanned = 0;
 
-            var assetList = new List<ShaderAsset>();
+            var list = new List<ShaderAsset>();
 
-            Add_Props(assetList);
-            Add_Buildings(assetList);
-            Add_SubBuildings(assetList);
-            Add_Vehicles(assetList);
+            Add_Props(list);
+            Add_Buildings(list);
+            Add_SubBuildings(list);
+            Add_Vehicles(list);
 
-            return assetList;
+            return list;
         }
 
         /// <summary>
@@ -63,20 +55,23 @@ namespace AdditiveShader.Manager
         /// Scans prop assets, adding any using the shader to the list.
         /// </summary>
         [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
-        [SuppressMessage("Correctness", "UNT0008:Null propagation on Unity objects", Justification = "m_mesh is not derived from MonoBehaviour")]
-        private static void Add_Props(List<ShaderAsset> assetList)
+        private static void Add_Props(List<ShaderAsset> list)
         {
-            foreach (var prop in Resources.FindObjectsOfTypeAll<PropInfo>())
+            int count = PrefabCollection<PropInfo>.LoadedCount();
+
+            ItemsScanned += count;
+
+            for (uint index = 0; index < count; index++)
                 try
                 {
-                    ++ItemsScanned;
+                    var prop = PrefabCollection<PropInfo>.GetLoaded(index);
 
-                    if (prop && HasShaderToken(prop.m_mesh?.name))
-                        assetList.Add(new ShaderAsset(prop));
+                    if (prop && prop.m_isCustomContent && prop.m_mesh && HasShaderToken(prop.m_mesh.name))
+                        list.Add(new ShaderAsset(prop));
                 }
                 catch (Exception error)
                 {
-                    Debug.LogError($"[AdditiveShader] PropInfo error: {prop.name}\n{error}");
+                    Debug.LogError($"[AdditiveShader] PropInfo error: \n{error}");
                 }
         }
 
@@ -84,26 +79,29 @@ namespace AdditiveShader.Manager
         /// Scans building assets, adding any using the shader to the list.
         /// </summary>
         [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
-        [SuppressMessage("Correctness", "UNT0008:Null propagation on Unity objects", Justification = "m_mesh is not derived from MonoBehaviour")]
-        private static void Add_Buildings(List<ShaderAsset> assetList)
+        private static void Add_Buildings(List<ShaderAsset> list)
         {
-            foreach (var building in Resources.FindObjectsOfTypeAll<BuildingInfo>())
+            int count = PrefabCollection<BuildingInfo>.LoadedCount();
+
+            ItemsScanned += count;
+
+            for (uint index = 0; index < count; index++)
                 try
                 {
-                    ++ItemsScanned;
+                    var building = PrefabCollection<BuildingInfo>.GetLoaded(index);
 
-                    if (building)
+                    if (building && building.m_isCustomContent)
                     {
-                        if (HasShaderToken(building.m_mesh?.name))
-                            assetList.Add(new ShaderAsset(building));
+                        if (building.m_mesh && HasShaderToken(building.m_mesh.name))
+                            list.Add(new ShaderAsset(building));
 
-                        if (building.m_props != null)
-                            CheckBuildingForShaderProps(building);
+                        if (building.m_props != null && ContainsShaderProps(building))
+                            list.Add(new ShaderAsset(building, true));
                     }
                 }
                 catch (Exception error)
                 {
-                    Debug.LogError($"[AdditiveShader] BuildingInfo error: {building.name} \n{error}");
+                    Debug.LogError($"[AdditiveShader] BuildingInfo error: \n{error}");
                 }
         }
 
@@ -112,33 +110,36 @@ namespace AdditiveShader.Manager
         /// it we have to increase the <c>m_maxPropDistance</c> for the whole building, _in addition_ to
         /// the props themselves being updated (<see cref="Add_Props(List{ShaderAsset})"/>).
         /// </summary>
-        /// <param name="building">The <see cref="BuildingInfo"/> asset to scan.</param>
+        /// <param name="building">The <see cref="BuildingInfo"/> to inspect.</param>
+        /// <returns>Returns <c>true</c> if the building contains shader-using props, otherwise <c>false</c>.</returns>
         [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
-        [SuppressMessage("Correctness", "UNT0008:Null propagation on Unity objects", Justification = "m_mesh is not derived from MonoBehaviour")]
-        private static void CheckBuildingForShaderProps(BuildingInfo building)
-        {
-            if (building.m_props.Any(prop => prop.m_finalProp && HasShaderToken(prop.m_finalProp.m_mesh.name)))
-                building.m_maxPropDistance = EXTENDED_BUILDING_PROP_VISIBILITY_DISTANCE;
-        }
+        private static bool ContainsShaderProps(BuildingInfo building) =>
+            building.m_props.Any(prop =>
+                prop.m_finalProp &&
+                prop.m_finalProp.m_isCustomContent &&
+                HasShaderToken(prop.m_finalProp.m_mesh.name));
 
         /// <summary>
         /// Scans sub building assets, adding any using the shader to the list.
         /// </summary>
         [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
-        [SuppressMessage("Correctness", "UNT0008:Null propagation on Unity objects", Justification = "m_mesh is not derived from MonoBehaviour")]
         private static void Add_SubBuildings(List<ShaderAsset> assetList)
         {
+            // PrefabCollection (used in methods above) doesn't appear to contain BuildingInfoSub.
+            // So we have to use FindObjectsOfTypeAll, which is 2x slower :(
+            // Also, the m_isCustomContent is false for all subs.
+            // Luckily there aren't many of them.
             foreach (var subBuilding in Resources.FindObjectsOfTypeAll<BuildingInfoSub>())
                 try
                 {
                     ++ItemsScanned;
 
-                    if (subBuilding && HasShaderToken(subBuilding.m_mesh?.name))
+                    if (subBuilding && subBuilding.m_mesh && HasShaderToken(subBuilding.m_mesh.name))
                         assetList.Add(new ShaderAsset(subBuilding));
                 }
                 catch (Exception error)
                 {
-                    Debug.LogError($"[AdditiveShader] BuildingInfoSub error: {subBuilding.name} \n{error}");
+                    Debug.LogError($"[AdditiveShader] BuildingInfoSub error: \n{error}");
                 }
         }
 
@@ -146,20 +147,20 @@ namespace AdditiveShader.Manager
         /// Scans vehicle assets, adding any using the shader to the list.
         /// </summary>
         [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
-        [SuppressMessage("Correctness", "UNT0008:Null propagation on Unity objects", Justification = "m_mesh is not derived from MonoBehaviour")]
         private static void Add_Vehicles(List<ShaderAsset> assetList)
         {
+            // Same situation as for BuildingInfoSub, we have to use FindObjectsOfTypeAll :(
             foreach (var vehicle in Resources.FindObjectsOfTypeAll<VehicleInfoSub>())
                 try
                 {
                     ++ItemsScanned;
 
-                    if (vehicle && HasShaderToken(vehicle.m_mesh?.name))
+                    if (vehicle && vehicle.m_mesh && HasShaderToken(vehicle.m_mesh.name))
                         assetList.Add(new ShaderAsset(vehicle));
                 }
                 catch (Exception error)
                 {
-                    Debug.LogError($"[AdditiveShader] VehicleInfoSub error: {vehicle.name} \n{error}");
+                    Debug.LogError($"[AdditiveShader] VehicleInfoSub error: \n{error}");
                 }
         }
     }
