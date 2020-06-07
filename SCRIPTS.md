@@ -39,7 +39,7 @@ var timeOff = 6.0f; // this will be used
 For more information on settings, see [Asset Settings Guide](./ASSETS.md).
 
 Once you've defined your settings, paste the whole thing (settings + code)
-in to the Mod Tools script console (open it with `F7` key).
+in to the Mod Tools script console.
 
 ## Props script
 

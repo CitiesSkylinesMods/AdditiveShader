@@ -1,12 +1,22 @@
 # AdditiveShader
 
-Source code for [Additive Shader mod](https://steamcommunity.com/sharedfiles/filedetails/?id=1410003347) developed by **Ronyx69** and **Simon Ryr**, moved to this repository with permission from Ronyx69.
+Additive Shader mod allows asset creators to add time-based light effects to
+their props, buildings and vehicles.
 
-See also:
+Based on [Additive Shader mod](https://steamcommunity.com/sharedfiles/filedetails/?id=1410003347) by **Ronyx69** and **Simon Ryr**.
 
-* [CSL Modding guide](https://cslmodding.info/mod/additive-shader/)
-* [Asset settings guide](./ASSETS.md)
-* [Scripts](https://gist.github.com/ronyx69/97a8efae47d6828f01d7d0ab8189fd73) for [Mod Tools](https://steamcommunity.com/sharedfiles/filedetails/?id=450877484) console (`F7`)
+This repository was setup and code updated with permission of Ronyx69.
+
+## Asset creators
+
+* [Making Additive Shader Assets](https://cslmodding.info/mod/additive-shader/)
+* [Mod Tools Scripts](./SCRIPTS.md)
+
+## Modders
+
+Work is in progress to allow remote control of shaders.
+
+DRAFT documentation is available for feedback: [./MODS.md]
 
 ## Contributing
 
