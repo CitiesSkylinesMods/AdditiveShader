@@ -12,7 +12,7 @@ namespace AdditiveShader.Manager
     /// </para>
     /// </summary>
     [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1131:Use readable conditions", Justification = "Common pattern.")]
-    [SuppressMessage("StyleCop.CSharp.NamingRules", "SA1310:Field names should not contain underscore")]
+    [SuppressMessage("StyleCop.CSharp.NamingRules", "SA1310:Field names should not contain underscore", Justification = "Unable to suppress for constants.")]
     [SuppressMessage("StyleCop.CSharp.SpacingRules", "SA1008:Opening parenthesis should be spaced correctly")]
     [SuppressMessage("StyleCop.CSharp.SpacingRules", "SA1009:Closing parenthesis should be spaced correctly")]
     public class ShaderInfo
@@ -46,12 +46,12 @@ namespace AdditiveShader.Manager
         [SuppressMessage("StyleCop.CSharp.SpacingRules", "SA1001:Commas should be spaced correctly")]
         private static readonly Dictionary<string, ShaderInfo> Profiles = new Dictionary<string, ShaderInfo>
         {
-            // Profile                        On       Off      RC     Always Static Midnt  Twilt  Day    Night
-            { "AlwaysOn"     , new ShaderInfo(0f     , 24f    , false, true , true , false, false, false, false) },
-            { "RemoteControl", new ShaderInfo(-1     , -1     , true , false, true , false, false, false, false) },
-            { "DayTime"      , new ShaderInfo(SUNRISE, SUNSET , false, false, false, false, true , true , false) },
-            { "NightTime"    , new ShaderInfo(SUNSET , SUNRISE, false, false, false, true , true , false, true ) },
-            { "Container"    , new ShaderInfo(0f     , 24f    , false, true , false, false, false, false, false) }, // AssetType.Container
+            // Profile                     On       Off      RC     Always Static Midnt  Twilt  Day    Night
+            { "AlwaysOn"  , new ShaderInfo(0f     , 24f    , false, true , true , false, false, false, false) },
+            { "AlwaysOff" , new ShaderInfo(-1     , -1     , true , false, true , false, false, false, false) },
+            { "DayTime"   , new ShaderInfo(SUNRISE, SUNSET , false, false, false, false, true , true , false) },
+            { "NightTime" , new ShaderInfo(SUNSET , SUNRISE, false, false, false, true , true , false, true ) },
+            { "Container" , new ShaderInfo(0f     , 24f    , false, true , false, false, false, false, false) }, // AssetType.Container
         };
 
         /// <summary>
@@ -117,7 +117,8 @@ namespace AdditiveShader.Manager
                     OverlapsMidnight    = OffTime < OnTime;
                     IsToggledByTwilight = TogglesAtTwilight();
 
-                    IsDayTimeOnly = !IsAlwaysOn && !OverlapsMidnight && SUNSET_START < OnTime && OffTime < SUNSET_END;
+                    IsDayTimeOnly = !IsAlwaysOn && !OverlapsMidnight &&
+                                    SUNSET_START < OnTime && OffTime < SUNSET_END;
 
                     IsNightTimeOnly = !IsAlwaysOn && OverlapsMidnight
                         ?  SUNSET_START < OnTime && OffTime < SUNRISE_END
