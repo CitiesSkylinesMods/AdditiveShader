@@ -20,6 +20,8 @@ namespace AdditiveShader.Manager
     /// </summary>
     public class AdditiveShaderManager : MonoBehaviour
     {
+        private const bool FORCE = true;
+
         [SuppressMessage("StyleCop.CSharp.NamingRules", "SA1310:Field names should not contain underscore")]
         private const float TWILIGHT_CHECK_INTERVAL = 9.7f;
 
@@ -29,22 +31,22 @@ namespace AdditiveShader.Manager
         /// <para>Lookup of remote group <see cref="Guid"/> to associated assets.</para>
         /// <para>A group is only added to the dictionary if it contains one or more assets.</para>
         /// </summary>
-        private Dictionary<Guid, IEnumerable<ShaderAsset>> remoteGroups;
+        private Dictionary<Guid, IEnumerable<ManagedAsset>> remoteGroups;
 
         /// <summary>
         /// A list containing all shader-using assets.
         /// </summary>
-        private ICollection<ShaderAsset> assets;
+        private List<ManagedAsset> managedAssets;
 
         /// <summary>
         /// A list of time-based shader-using assets that toggle at twilight (dusk + dawn).
         /// </summary>
-        private List<ShaderAsset> twilightAssets;
+        private List<ManagedAsset> twilightAssets;
 
         /// <summary>
         /// A list of time-based shader-using assets (excluding <see cref="twilightAssets"/>).
         /// </summary>
-        private List<ShaderAsset> timeBasedAssets;
+        private List<ManagedAsset> timeBasedAssets;
 
         /// <summary>
         /// Tracks if it is currently night time.
@@ -76,15 +78,14 @@ namespace AdditiveShader.Manager
         /// <param name="group">The group <see cref="Guid"/> (unique identifier).</param>
         /// <param name="tags">Shaders matching all tags will be added to the group.</param>
         /// <returns>Returns <c>true</c> if the group contains at least one shader, otherwise <c>false</c>.</returns>
-        [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
         public bool AddRemoteGroup(Guid group, HashSet<string> tags)
         {
-            if (assets == null || assets.Count == 0 || tags == null || tags.Count == 0 || remoteGroups?.ContainsKey(group) != false)
+            if (managedAssets == null || tags == null || managedAssets.Count == 0 || tags.Count == 0 || remoteGroups?.ContainsKey(group) != false)
                 return false;
 
-            var list = new List<ShaderAsset>(assets.Count);
+            var list = new List<ManagedAsset>(managedAssets.Count);
 
-            foreach (var asset in assets)
+            foreach (var asset in managedAssets)
                 if (!asset.IsContainer && tags.IsSubsetOf(asset.HashTags))
                     list.Add(asset);
 
@@ -100,10 +101,9 @@ namespace AdditiveShader.Manager
         /// Removes one or more remote contol groups.
         /// </summary>
         /// <param name="groups">A list of one or more group <see cref="Guid"/>s.</param>
-        [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
         public void RemoveRemoteGroups(ICollection<Guid> groups)
         {
-            if (groups == null || groups.Count == 0 || remoteGroups == null)
+            if (groups == null || remoteGroups == null || groups.Count == 0)
                 return;
 
             foreach (var group in groups)
@@ -116,12 +116,11 @@ namespace AdditiveShader.Manager
         /// </summary>
         /// <param name="group">The group <see cref="Guid"/>.</param>
         /// <param name="visible">The desired visibility state of the shaders in the group.</param>
-        [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
         public void SetRemoteGroupVisibility(Guid group, bool visible)
         {
-            if (remoteGroups != null && remoteGroups.TryGetValue(group, out var shaders))
-                foreach (var shader in shaders)
-                    shader.SetVisible(visible);
+            if (remoteGroups != null && remoteGroups.TryGetValue(group, out var list))
+                foreach (var asset in list)
+                    asset.SetVisible(visible);
         }
 
         /// <summary>
@@ -135,27 +134,27 @@ namespace AdditiveShader.Manager
 
             AssetReporter.Timer = Stopwatch.StartNew();
 
-            assets = AssetScanner.ListShaderAssets();
+            managedAssets = AssetScanner.CollateManagedAssets();
 
-            if (assets.Count == 0)
+            if (managedAssets.Count == 0)
             {
                 Debug.Log("[AdditiveShader] No shader-using assets found. Manager is shutting down.");
                 OnDestroy();
                 return;
             }
 
-            remoteGroups = new Dictionary<Guid, IEnumerable<ShaderAsset>>();
-
-            PrepareShaderCategories(assets.Count);
+            PrepareAssetCategories(managedAssets.Count);
             SortAssetsInToCategories(); // also generates report
-            CompactShaderCategories();
+            CompactAssetCategories();
+
+            remoteGroups = new Dictionary<Guid, IEnumerable<ManagedAsset>>();
 
             enabled = timeBasedAssets.Count != 0;
 
             if (twilightAssets.Count != 0)
             {
                 InvokeRepeating(nameof(CheckForTwilight), TWILIGHT_CHECK_INTERVAL, TWILIGHT_CHECK_INTERVAL);
-                CheckForTwilight(true);
+                CheckForTwilight(FORCE);
             }
 
             instance = this;
@@ -215,27 +214,49 @@ namespace AdditiveShader.Manager
             CancelInvoke();
             enabled = false;
             remoteGroups = null;
-            DisposeShaderLists();
+            RestoreDefaults();
+            DisposeAssetLists();
         }
 
         /// <summary>
-        /// Hook events so that ploppable assets can be refreshed when game options change.
+        /// Hook events so that assets can be refreshed when game options change.
         /// </summary>
         /// <param name="enable">Hooks when <c>true</c>, unhooks when <c>false</c>.</param>
         [SuppressMessage("Naming", "AV1738:Event handlers should be named according to the pattern '(InstanceName)On(EventName)'", Justification = "Overkill.")]
         private static void HookEvents(bool enable)
         {
-            // var optionsPanel = UIView.library.Get<UIPanel>("OptionsPanel"); // might need this as well?
+            var optionsPanel = UIView.library.Get<UIPanel>("OptionsPanel");
             var levelOfDetail = UIView.GetAView().FindUIComponent<UIDropDown>("LevelOfDetail");
 
             if (enable)
             {
+                optionsPanel.eventVisibilityChanged     += OnOptionsPanelVisibilityChanged;
                 levelOfDetail.eventSelectedIndexChanged += OnLevelOfDetailChanged;
             }
             else
             {
+                optionsPanel.eventVisibilityChanged     += OnOptionsPanelVisibilityChanged;
                 levelOfDetail.eventSelectedIndexChanged -= OnLevelOfDetailChanged;
             }
+        }
+
+        /// <summary>
+        /// Reapply render distance changes when options change, just in case.
+        /// </summary>
+        /// <remarks>
+        /// This will often be superfluous, but the alternative is to start
+        /// integrating with stuff like ULOD and anything else that might
+        /// overwrite the render distances = PITA.
+        /// </remarks>
+        /// <param name="component">Ignored.</param>
+        /// <param name="visible">The visibility of the options panel.</param>
+        private static void OnOptionsPanelVisibilityChanged(UIComponent component, bool visible)
+        {
+            if (visible || instance is null)
+                return;
+
+            foreach (var asset in instance.managedAssets)
+                asset.ApplyCachedRenderDistance();
         }
 
         /// <summary>
@@ -249,7 +270,7 @@ namespace AdditiveShader.Manager
             if (instance is null)
                 return;
 
-            foreach (var asset in instance.assets)
+            foreach (var asset in instance.managedAssets)
                 asset.ApplyCachedRenderDistance();
         }
 
@@ -268,39 +289,67 @@ namespace AdditiveShader.Manager
         }
 
         /// <summary>
-        /// Updates the light intensity for the shader to whatever it should be at this moment in time.
+        /// Restore assets to their published defaults when shutting down.
         /// </summary>
-        /// <param name="shader">The shader to refresh.</param>
-        [SuppressMessage("Maintainability", "AV1537:If-else-if construct should end with an unconditional else clause", Justification = "Intentional.")]
-        private void RefreshShader(ShaderAsset shader)
+        /// <remarks>
+        /// This will help avoid asset corruption if user quits to main menu
+        /// then goes in to asset editor. But only for games which have
+        /// not already saved the altered values (ie. used earlier versions
+        /// of the mod). ProTip: Always exit to desktop before using editor.
+        /// </remarks>
+        private void RestoreDefaults()
         {
-            if (shader.Info.IsToggledByTwilight)
+            foreach (var asset in managedAssets)
+                asset.RestoreDefaults();
+        }
+
+        /// <summary>
+        /// Updates the light intensity for the asset to whatever it should normally be at this moment in time.
+        /// </summary>
+        /// <param name="asset">The <see cref="ManagedAsset"/> to refresh.</param>
+        [SuppressMessage("Maintainability", "AV1537:If-else-if construct should end with an unconditional else clause", Justification = "Intentional.")]
+        private void RefreshAssetVisibility(ManagedAsset asset)
+        {
+            if (asset.Info.IsToggledByTwilight)
             {
-                Debug.Log($"[AdditiveShader] - {shader.TypeOfAsset} Refresh by twilight: {isNightTime}");
-                shader.SetVisibleByTwilight(isNightTime);
+                Debug.Log($"[AdditiveShader] - {asset.TypeOfAsset} Refresh by twilight: {isNightTime}");
+                asset.SetVisibleByTwilight(isNightTime);
             }
-            else if (!shader.Info.IsStatic)
+            else if (!asset.Info.IsStatic)
             {
-                Debug.Log($"[AdditiveShader] - {shader.TypeOfAsset} Refresh by time: {Singleton<SimulationManager>.instance.m_currentDayTimeHour}");
-                shader.SetVisibleByTime(Singleton<SimulationManager>.instance.m_currentDayTimeHour);
+                Debug.Log($"[AdditiveShader] - {asset.TypeOfAsset} Refresh by time: {Singleton<SimulationManager>.instance.m_currentDayTimeHour}");
+                asset.SetVisibleByTime(Singleton<SimulationManager>.instance.m_currentDayTimeHour);
             }
-            else if (shader.Info.IsAlwaysOn)
+            else if (asset.Info.IsAlwaysOn)
             {
-                Debug.Log($"[AdditiveShader] - {shader.TypeOfAsset} Refresh as AlwaysOn");
-                shader.SetVisible(true);
+                Debug.Log($"[AdditiveShader] - {asset.TypeOfAsset} Refresh as AlwaysOn");
+                asset.SetVisible(true);
             }
         }
 
         /// <summary>
-        /// <para>Sorts shaders in to categories and publishes report to log file.</para>
+        /// Initialises asset category lists:
+        /// <list type="bullet">
+        /// <item><see cref="twilightAssets"/> -- toggled at twilight (dusk and dawn)</item>
+        /// <item><see cref="timeBasedAssets"/> -- other time-based on/off</item>
+        /// </list>
+        /// </summary>
+        /// <param name="capacity">The initial capacity for the lists.</param>
+        private void PrepareAssetCategories(int capacity)
+        {
+            twilightAssets = new List<ManagedAsset>(capacity);
+            timeBasedAssets = new List<ManagedAsset>(capacity);
+        }
+
+        /// <summary>
+        /// <para>Sorts <see cref="managedAssets"/> in to categories and publishes report to log file.</para>
         /// <para>Note: Report could be done separtely, but doing it here saves an extra loop.</para>
         /// </summary>
-        [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
         private void SortAssetsInToCategories()
         {
             var report = new AssetReporter();
 
-            foreach (var asset in assets)
+            foreach (var asset in managedAssets)
             {
                 if (!asset.IsContainer && !asset.Info.IsStatic)
                     (asset.Info.IsToggledByTwilight ? twilightAssets : timeBasedAssets)
@@ -309,39 +358,25 @@ namespace AdditiveShader.Manager
                 report.Append(asset);
             }
 
-            report.Summary(assets.Count, twilightAssets.Count, timeBasedAssets.Count);
+            report.Summary(managedAssets.Count, twilightAssets.Count, timeBasedAssets.Count);
             report.PublishToLogFile();
-        }
-
-        /// <summary>
-        /// Initialises shader lists:
-        /// <list type="bullet">
-        /// <item><see cref="twilightAssets"/> -- toggled at twilight (dusk and dawn)</item>
-        /// <item><see cref="timeBasedAssets"/> -- other time-based on/off</item>
-        /// </list>
-        /// </summary>
-        /// <param name="capacity">The initial capacity for the lists.</param>
-        private void PrepareShaderCategories(int capacity)
-        {
-            twilightAssets = new List<ShaderAsset>(capacity);
-            timeBasedAssets = new List<ShaderAsset>(capacity);
         }
 
         /// <summary>
         /// Trims excess capacity from populated lists.
         /// </summary>
-        private void CompactShaderCategories()
+        private void CompactAssetCategories()
         {
             twilightAssets.TrimExcess();
             timeBasedAssets.TrimExcess();
         }
 
         /// <summary>
-        /// Disposes the shader lists.
+        /// Disposes the asset/category lists.
         /// </summary>
-        private void DisposeShaderLists()
+        private void DisposeAssetLists()
         {
-            assets = null;
+            managedAssets = null;
             twilightAssets = null;
             timeBasedAssets = null;
         }

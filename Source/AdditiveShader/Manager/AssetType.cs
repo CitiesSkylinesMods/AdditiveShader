@@ -1,7 +1,7 @@
 namespace AdditiveShader.Manager
 {
     /// <summary>
-    /// The type of asset associated with an <see cref="ShaderAsset"/> instance.
+    /// The type of asset associated with an <see cref="ManagedAsset"/> instance.
     /// </summary>
     public enum AssetType
     {

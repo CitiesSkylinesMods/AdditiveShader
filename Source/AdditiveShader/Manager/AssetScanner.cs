@@ -7,8 +7,7 @@ namespace AdditiveShader.Manager
     using UnityEngine;
 
     /// <summary>
-    /// <para>The <see cref="AssetScanner"/> compiles a list of assets which use the additive shader.</para>
-    /// <para>The scanner runs once, during <see cref="AdditiveShaderManager.Start()"/>, and as such is _not_ performance critical.</para>
+    /// The <see cref="AssetScanner"/> compiles a list of assets which Additive Shader mod will manage.
     /// </summary>
     [SuppressMessage("Class Design", "AV1008:Class should not be static")]
     internal static class AssetScanner
@@ -19,26 +18,29 @@ namespace AdditiveShader.Manager
         private const string TOKEN = "AdditiveShader";
 
         /// <summary>
-        /// Gets the total number of items scanned, regardless of whether they use additive shader.
+        /// Gets total number of scanned assets; used by <see cref="AssetReporter"/>.
         /// </summary>
         public static int ItemsScanned { get; private set; }
 
         /// <summary>
         /// Scans supported asset types, converting any that use the shader to
-        /// <see cref="ShaderAsset"/> instances which are collated in the
+        /// <see cref="ManagedAsset"/> instances which are collated in the
         /// returned list.
         /// </summary>
-        /// <returns>Returns a list of <see cref="ShaderAsset"/> instances.</returns>
-        internal static ICollection<ShaderAsset> ListShaderAssets()
+        /// <returns>Returns a list of <see cref="ManagedAsset"/> instances.</returns>
+        [SuppressMessage("Member Design", "AV1130:Return type in method signature should be a collection interface instead of a concrete type", Justification = "Comprehensibility.")]
+        internal static List<ManagedAsset> CollateManagedAssets()
         {
             ItemsScanned = 0;
 
-            var list = new List<ShaderAsset>();
+            var list = new List<ManagedAsset>(150);
 
             Add_Props(list);
             Add_Buildings(list);
             Add_SubBuildings(list);
             Add_Vehicles(list);
+
+            list.TrimExcess();
 
             return list;
         }
@@ -54,8 +56,7 @@ namespace AdditiveShader.Manager
         /// <summary>
         /// Scans prop assets, adding any using the shader to the list.
         /// </summary>
-        [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
-        private static void Add_Props(List<ShaderAsset> list)
+        private static void Add_Props(List<ManagedAsset> list)
         {
             int count = PrefabCollection<PropInfo>.LoadedCount();
 
@@ -67,7 +68,7 @@ namespace AdditiveShader.Manager
                     var prop = PrefabCollection<PropInfo>.GetLoaded(index);
 
                     if (prop && prop.m_isCustomContent && prop.m_mesh && HasShaderToken(prop.m_mesh.name))
-                        list.Add(new ShaderAsset(prop));
+                        list.Add(new ManagedAsset(prop));
                 }
                 catch (Exception error)
                 {
@@ -78,8 +79,7 @@ namespace AdditiveShader.Manager
         /// <summary>
         /// Scans building assets, adding any using the shader to the list.
         /// </summary>
-        [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
-        private static void Add_Buildings(List<ShaderAsset> list)
+        private static void Add_Buildings(List<ManagedAsset> list)
         {
             int count = PrefabCollection<BuildingInfo>.LoadedCount();
 
@@ -93,10 +93,10 @@ namespace AdditiveShader.Manager
                     if (building && building.m_isCustomContent)
                     {
                         if (building.m_mesh && HasShaderToken(building.m_mesh.name))
-                            list.Add(new ShaderAsset(building));
+                            list.Add(new ManagedAsset(building));
 
                         if (building.m_props != null && ContainsShaderProps(building))
-                            list.Add(new ShaderAsset(building, true));
+                            list.Add(new ManagedAsset(building, true));
                     }
                 }
                 catch (Exception error)
@@ -108,11 +108,10 @@ namespace AdditiveShader.Manager
         /// <summary>
         /// Because LODs don't support additive shader, if there are any props in the building that use
         /// it we have to increase the <c>m_maxPropDistance</c> for the whole building, _in addition_ to
-        /// the props themselves being updated (<see cref="Add_Props(List{ShaderAsset})"/>).
+        /// the props themselves being updated (<see cref="Add_Props(List{ManagedAsset})"/>).
         /// </summary>
         /// <param name="building">The <see cref="BuildingInfo"/> to inspect.</param>
         /// <returns>Returns <c>true</c> if the building contains shader-using props, otherwise <c>false</c>.</returns>
-        [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
         private static bool ContainsShaderProps(BuildingInfo building) =>
             building.m_props.Any(prop =>
                 prop.m_finalProp &&
@@ -122,8 +121,7 @@ namespace AdditiveShader.Manager
         /// <summary>
         /// Scans sub building assets, adding any using the shader to the list.
         /// </summary>
-        [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
-        private static void Add_SubBuildings(List<ShaderAsset> assetList)
+        private static void Add_SubBuildings(List<ManagedAsset> assetList)
         {
             // PrefabCollection (used in methods above) doesn't appear to contain BuildingInfoSub.
             // So we have to use FindObjectsOfTypeAll, which is 2x slower :(
@@ -135,7 +133,7 @@ namespace AdditiveShader.Manager
                     ++ItemsScanned;
 
                     if (subBuilding && subBuilding.m_mesh && HasShaderToken(subBuilding.m_mesh.name))
-                        assetList.Add(new ShaderAsset(subBuilding));
+                        assetList.Add(new ManagedAsset(subBuilding));
                 }
                 catch (Exception error)
                 {
@@ -146,8 +144,7 @@ namespace AdditiveShader.Manager
         /// <summary>
         /// Scans vehicle assets, adding any using the shader to the list.
         /// </summary>
-        [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1519:Braces should not be omitted from multi-line child statement")]
-        private static void Add_Vehicles(List<ShaderAsset> assetList)
+        private static void Add_Vehicles(List<ManagedAsset> assetList)
         {
             // Same situation as for BuildingInfoSub, we have to use FindObjectsOfTypeAll :(
             foreach (var vehicle in Resources.FindObjectsOfTypeAll<VehicleInfoSub>())
@@ -156,7 +153,7 @@ namespace AdditiveShader.Manager
                     ++ItemsScanned;
 
                     if (vehicle && vehicle.m_mesh && HasShaderToken(vehicle.m_mesh.name))
-                        assetList.Add(new ShaderAsset(vehicle));
+                        assetList.Add(new ManagedAsset(vehicle));
                 }
                 catch (Exception error)
                 {

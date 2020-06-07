@@ -10,7 +10,7 @@ namespace AdditiveShader.Manager
     /// <para>See <see cref="https://cslmodding.info/mod/additive-shader/"/> for details.</para>
     /// </summary>
     [SuppressMessage("StyleCop.CSharp.NamingRules", "SA1310:Field names should not contain underscore")]
-    public class ShaderAsset
+    public class ManagedAsset
     {
         /// <summary>
         /// Used to force visibility update during instantiation.
@@ -21,8 +21,8 @@ namespace AdditiveShader.Manager
         /// Fake <c>m_mesh.name</c> for <see cref="AssetType.Container"/> assets.
         /// </summary>
         /// <remarks>
-        /// It will be passed to constructor of <see cref="ShaderInfo"/> class
-        /// which will treat it as a profile KeyWord.
+        /// It is passed to constructor of <see cref="ShaderInfo"/> class
+        /// which will treat it as 'Continer' profile.
         /// </remarks>
         private const string CONTAINER_BUILDING = "AdditiveShader Container 0 0 container-building";
 
@@ -31,7 +31,7 @@ namespace AdditiveShader.Manager
         /// the <see cref="BuildingInfo.m_maxPropDistance"/> must be
         /// increased to prevent its props using LOD.
         /// </summary>
-        private const float EXTENDED_BUILDING_PROP_VISIBILITY_DISTANCE = 25000;
+        private const float CONTAINER_MAX_PROP_DISTANCE = 25000;
 
         /// <summary>
         /// Asset mesh color (<c>m_mesh.colors[]</c>) - required to
@@ -40,18 +40,36 @@ namespace AdditiveShader.Manager
         [SuppressMessage("StyleCop.CSharp.NamingRules", "SA1306:Field names should begin with lower-case letter", Justification = "Treat like a constant.")]
         private readonly Color MESH_COLOR = Color.white;
 
+        // Backup original values (in constructors) so they can be restored on exit.
+        // Each AssetType uses as _subset_ of these backups.
+        private readonly bool    backup_lodHasDifferentShader; // PropInfo, BuildingInfo, BuildingInfoSub
+        private readonly bool    backup_lodMissing;            // BuildingInfo
+        private readonly Color[] backup_meshColors;            // BuildingInfo, BuildingInfoSub, VehicleInfoSub
+        private readonly float   backup_InvFade;               // PropInfo, BuildingInfo, BuildingInfoSub, VehicleInfoSub
+        private readonly float   backup_lodRenderDistance;     // PropInfo, VehicleInfoSub
+        private readonly float   backup_maxRenderDistance;     // PropInfo, VehicleInfoSub
+        private readonly float   backup_maxLodDistance;        // BuildingInfo, BuildingInfoSub
+        private readonly float   backup_minLodDistance;        // BuildingInfo, BuildingInfoSub
+        private readonly float   backup_maxPropDistance;       // Container (BuildingInfo)
+
         /// <summary>
-        /// Initializes a new instance of the <see cref="ShaderAsset"/> class
+        /// Initializes a new instance of the <see cref="ManagedAsset"/> class
         /// for a <see cref="PropInfo"/> asset.
         /// </summary>
         /// <param name="asset">The <see cref="PropInfo"/> which uses the shader.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="asset"/> is <c>null</c>.</exception>
-        internal ShaderAsset(PropInfo asset)
+        internal ManagedAsset(PropInfo asset)
         {
             TypeOfAsset = AssetType.Prop;
             Prop = asset;
 
             Info = new ShaderInfo(asset.m_mesh.name, nameof(PropInfo), asset.name);
+
+            backup_lodHasDifferentShader = asset.m_lodHasDifferentShader;
+            backup_InvFade = asset.m_material.GetFloat("_InvFade");
+
+            backup_lodRenderDistance = asset.m_lodRenderDistance;
+            backup_maxRenderDistance = asset.m_maxRenderDistance;
 
             asset.m_lodHasDifferentShader = false;
             asset.m_material.SetFloat("_InvFade", Info.Fade);
@@ -63,18 +81,27 @@ namespace AdditiveShader.Manager
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ShaderAsset"/> class
+        /// Initializes a new instance of the <see cref="ManagedAsset"/> class
         /// for a <see cref="BuildingInfo"/> asset.
         /// </summary>
         /// <param name="asset">The <see cref="BuildingInfo"/> which uses the shader.</param>
         /// <exception cref="ArgumentNullException">Thrown if asset <c>m_mesh.name</c> is <c>null</c>.</exception>
         /// <exception cref="FormatException">Thrown if asset <c>m_mesh.name</c> format is invalid.</exception>
-        internal ShaderAsset(BuildingInfo asset)
+        [SuppressMessage("Maintainability", "AV1500:Member or local function contains too many statements")]
+        internal ManagedAsset(BuildingInfo asset)
         {
             TypeOfAsset = AssetType.Building;
             Building = asset;
 
             Info = new ShaderInfo(asset.m_mesh.name, nameof(BuildingInfo), asset.name);
+
+            backup_lodHasDifferentShader = asset.m_lodHasDifferentShader;
+            backup_lodMissing = asset.m_lodMissing;
+            backup_InvFade = asset.m_material.GetFloat("_InvFade");
+            backup_meshColors = asset.m_mesh.colors;
+
+            backup_maxLodDistance = asset.m_maxLodDistance;
+            backup_minLodDistance = asset.m_minLodDistance;
 
             asset.m_lodHasDifferentShader = false;
             asset.m_lodMissing = true;
@@ -88,7 +115,7 @@ namespace AdditiveShader.Manager
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ShaderAsset"/> class
+        /// Initializes a new instance of the <see cref="ManagedAsset"/> class
         /// for a <see cref="BuildingInfo"/> asset which contains a shader-using
         /// <see cref="PropInfo"/> asset.
         /// </summary>
@@ -102,7 +129,7 @@ namespace AdditiveShader.Manager
         /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="isContainer"/> is not <c>true</c>.</exception>
         /// <exception cref="ArgumentNullException">Thrown if asset <c>m_mesh.name</c> is <c>null</c>.</exception>
         /// <exception cref="FormatException">Thrown if asset <c>m_mesh.name</c> format is invalid.</exception>
-        internal ShaderAsset(BuildingInfo asset, bool isContainer)
+        internal ManagedAsset(BuildingInfo asset, bool isContainer)
         {
             if (!isContainer)
                 throw new ArgumentOutOfRangeException(nameof(isContainer), "This constructor can only be used for buildings that contain shader-using props.");
@@ -114,23 +141,35 @@ namespace AdditiveShader.Manager
 
             Info = new ShaderInfo(CONTAINER_BUILDING, nameof(BuildingInfo), asset.name);
 
-            CachedRenderDistance = EXTENDED_BUILDING_PROP_VISIBILITY_DISTANCE;
+            backup_maxLodDistance = asset.m_maxLodDistance;
+            backup_minLodDistance = asset.m_minLodDistance;
+            backup_maxPropDistance = asset.m_maxPropDistance;
+
+            CachedRenderDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
             ApplyCachedRenderDistance();
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ShaderAsset"/> class
+        /// Initializes a new instance of the <see cref="ManagedAsset"/> class
         /// for a <see cref="BuildingInfoSub"/> asset.
         /// </summary>
         /// <param name="asset">The <see cref="BuildingInfoSub"/> which uses the shader.</param>
         /// <exception cref="ArgumentNullException">Thrown if asset <c>m_mesh.name</c> is <c>null</c>.</exception>
         /// <exception cref="FormatException">Thrown if asset <c>m_mesh.name</c> format is invalid.</exception>
-        internal ShaderAsset(BuildingInfoSub asset)
+        [SuppressMessage("Maintainability", "AV1500:Member or local function contains too many statements")]
+        internal ManagedAsset(BuildingInfoSub asset)
         {
             TypeOfAsset = AssetType.SubBuilding;
             SubBuilding = asset;
 
             Info = new ShaderInfo(asset.m_mesh.name, nameof(BuildingInfoSub), asset.name);
+
+            backup_lodHasDifferentShader = asset.m_lodHasDifferentShader;
+            backup_InvFade = asset.m_material.GetFloat("_InvFade");
+            backup_meshColors = asset.m_mesh.colors;
+
+            backup_maxLodDistance = asset.m_maxLodDistance;
+            backup_minLodDistance = asset.m_minLodDistance;
 
             asset.m_lodHasDifferentShader = false;
             asset.m_material.SetFloat("_InvFade", Info.Fade);
@@ -143,18 +182,24 @@ namespace AdditiveShader.Manager
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ShaderAsset"/> class
+        /// Initializes a new instance of the <see cref="ManagedAsset"/> class
         /// for a <see cref="VehicleInfoSub"/> asset.
         /// </summary>
         /// <param name="asset">The <see cref="VehicleInfoSub"/> which uses the shader.</param>
         /// <exception cref="ArgumentNullException">Thrown if asset <c>m_mesh.name</c> is <c>null</c>.</exception>
         /// <exception cref="FormatException">Thrown if asset <c>m_mesh.name</c> format is invalid.</exception>
-        internal ShaderAsset(VehicleInfoSub asset)
+        internal ManagedAsset(VehicleInfoSub asset)
         {
             TypeOfAsset = AssetType.Vehicle;
             Vehicle = asset;
 
             Info = new ShaderInfo(asset.m_mesh.name, nameof(VehicleInfoSub), asset.name);
+
+            backup_InvFade = asset.m_material.GetFloat("_InvFade");
+            backup_meshColors = asset.m_mesh.colors;
+
+            backup_lodRenderDistance = asset.m_lodRenderDistance;
+            backup_maxRenderDistance = asset.m_maxRenderDistance;
 
             asset.m_material.SetFloat("_InvFade", Info.Fade);
             asset.m_mesh.colors = GetMeshColors(asset.m_mesh.vertices.Length);
@@ -290,6 +335,59 @@ namespace AdditiveShader.Manager
         }
 
         /// <summary>
+        /// Rstores the original values from backups.
+        /// </summary>
+        [SuppressMessage("Maintainability", "AV1500:Member or local function contains too many statements")]
+        [SuppressMessage("Maintainability", "AV1536:Non-exhaustive switch statement requires a default case clause", Justification = "Intentional>")]
+        public void RestoreDefaults()
+        {
+            try
+            {
+                switch (TypeOfAsset)
+                {
+                    case AssetType.Prop:
+                        Prop.m_lodHasDifferentShader = backup_lodHasDifferentShader;
+                        Prop.m_material.SetFloat("_InvFade", backup_InvFade);
+                        Prop.m_lodRenderDistance = backup_lodRenderDistance;
+                        Prop.m_maxRenderDistance = backup_maxRenderDistance;
+                        return;
+
+                    case AssetType.Building:
+                        Building.m_lodHasDifferentShader = backup_lodHasDifferentShader;
+                        Building.m_lodMissing = backup_lodMissing;
+                        Building.m_material.SetFloat("_InvFade", backup_InvFade);
+                        Building.m_mesh.colors = backup_meshColors;
+                        Building.m_maxLodDistance = backup_maxLodDistance;
+                        Building.m_minLodDistance = backup_minLodDistance;
+                        return;
+
+                    case AssetType.Container:
+                        Building.m_maxLodDistance = backup_maxLodDistance;
+                        Building.m_minLodDistance = backup_minLodDistance;
+                        Building.m_maxPropDistance = backup_maxPropDistance;
+                        return;
+
+                    case AssetType.SubBuilding:
+                        SubBuilding.m_lodHasDifferentShader = backup_lodHasDifferentShader;
+                        SubBuilding.m_material.SetFloat("_InvFade", backup_InvFade);
+                        SubBuilding.m_mesh.colors = backup_meshColors;
+                        SubBuilding.m_maxLodDistance = backup_maxLodDistance;
+                        SubBuilding.m_minLodDistance = backup_maxRenderDistance;
+                        return;
+
+                    case AssetType.Vehicle:
+                        Vehicle.m_lodRenderDistance = backup_lodRenderDistance;
+                        Vehicle.m_maxRenderDistance = backup_maxRenderDistance;
+                        return;
+                }
+            }
+            catch (Exception error)
+            {
+                Debug.Log($"[AdditiveShader] Unable to restore {this} to default values: \n{error}");
+            }
+        }
+
+        /// <summary>
         /// Applies cached render distance(s) as applicable to the asset type,
         /// unless the asset already defines larger value.
         /// </summary>
@@ -307,17 +405,23 @@ namespace AdditiveShader.Manager
                     Prop.m_lodRenderDistance = Mathf.Max(Prop.m_lodRenderDistance, CachedRenderDistance);
                     Prop.m_maxRenderDistance = Mathf.Max(Prop.m_maxRenderDistance, CachedRenderDistance);
                     return;
+
                 case AssetType.Building:
                     Building.m_maxLodDistance = Mathf.Max(Building.m_maxLodDistance, CachedRenderDistance);
                     Building.m_minLodDistance = Mathf.Max(Building.m_minLodDistance, CachedRenderDistance);
                     return;
+
                 case AssetType.Container:
-                    Building.m_maxPropDistance = Mathf.Max(Building.m_maxPropDistance, CachedRenderDistance);
+                    Building.m_maxLodDistance = Mathf.Max(Building.m_maxLodDistance, CachedRenderDistance);
+                    Building.m_minLodDistance = Mathf.Max(Building.m_minLodDistance, CachedRenderDistance);
+                    Building.m_maxPropDistance = Mathf.Max(Building.m_maxPropDistance, CONTAINER_MAX_PROP_DISTANCE);
                     return;
+
                 case AssetType.SubBuilding:
                     SubBuilding.m_maxLodDistance = Mathf.Max(SubBuilding.m_maxLodDistance, CachedRenderDistance);
                     SubBuilding.m_minLodDistance = Mathf.Max(SubBuilding.m_minLodDistance, CachedRenderDistance);
                     return;
+
                 case AssetType.Vehicle:
                     Vehicle.m_lodRenderDistance = Mathf.Max(Vehicle.m_lodRenderDistance, CachedRenderDistance);
                     Vehicle.m_maxRenderDistance = Mathf.Max(Vehicle.m_maxRenderDistance, CachedRenderDistance);

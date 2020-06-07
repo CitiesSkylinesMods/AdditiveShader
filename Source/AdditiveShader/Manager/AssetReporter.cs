@@ -41,7 +41,7 @@ namespace AdditiveShader.Manager
         /// Adds details of an asset to the report.
         /// </summary>
         /// <param name="shader">The shader-using asset to report on.</param>
-        internal void Append(ShaderAsset shader) =>
+        internal void Append(ManagedAsset shader) =>
             report
                 .AppendRightPad(shader.Info.IsStatic             ? YES : NO, 7)
                 .AppendRightPad(shader.Info.IsAlwaysOn           ? YES : NO, 9)
