@@ -36,7 +36,7 @@ var timeOff = 6.0f; // this will be used
 
 > Important: **KeyWords** are case sensitive!
 
-For more information on settings, see [Asset Settings Guide](./ASSETS.md).
+For more information on settings, see [Asset Settings Guide](./SETTINGS.md).
 
 Once you've defined your settings, paste the whole thing (settings + code)
 in to the Mod Tools script console.
