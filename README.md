@@ -11,12 +11,13 @@ This repository was setup and code updated with permission of Ronyx69.
 
 * [Making Additive Shader Assets](https://cslmodding.info/mod/additive-shader/)
 * [Mod Tools Scripts](./SCRIPTS.md)
+* [Settings Guide](./SETTINGS.md) - detailed info on script settings
 
 ## Modders
 
 Work is in progress to allow remote control of shaders.
 
-DRAFT documentation is available for feedback: [./MODS.md]
+* [DRAFT: Modding Guide](./MODS.md)
 
 ## Contributing
 
