@@ -17,6 +17,12 @@
       $(AssemblySearchPaths)
     </AssemblySearchPaths>
     <OutputPath>..\bin\$(Configuration)\</OutputPath>
+    <Version>1.5.0.5</Version>
+    <AssemblyVersion>1.5.0.5</AssemblyVersion>
+    <FileVersion>1.5.0.5</FileVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DocumentationFile>..\bin\Release\AdditiveShader.xml</DocumentationFile>
   </PropertyGroup>
 
   <!-- Temporary stuff -->
