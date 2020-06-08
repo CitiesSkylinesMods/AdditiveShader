@@ -1,6 +1,6 @@
 ## Overview
 
-> NOTE: DRAFT DOCUMENTATION FOR FUTURE FEATURE (NOT RELEASED YET)
+> :warning: NOTE: DRAFT DOCUMENTATION FOR FUTURE FEATURE (NOT RELEASED YET)
 
 Traditionally, Additive Shader mod has only allowed shaders to be toggled based
 on game time: On or Off at certain times of day.
@@ -10,45 +10,48 @@ in the `m_mesh.name` of the asset.
 
 ## Asset settings
 
-> See ASSETS guide if you haven't already done so.
+[Mod Tools Scripts](./SCRIPTS.md) allow asset creators to set up the mesh name
+easily via variables at start of script.
 
-The shader `m_mesh.name` needs to use this format:
+To expose a shader to external mods, there are two key requirements:
 
-```
-AdditiveShader RemoteControl Fade Intensity tag1 tag2 ... tagN
-```
+* The `keyword` must be set to `Moddable`, _and_
+* The `tags` must be set based on the filtering requirements of the mod
 
-The `RemoteControl` **Keyword** tells Additive Shader mod that something external
-will be controlling visibility of the asset. The shader will be hidden by default
-and Additive Shader mod won't change the visibility unless instructed to do so by
-an external mod.
+The mod should specify clearly what tags it's looking for.
 
-One or more **tags** allow the external mod to locate the asset and control its
-visibility.
+An asset such as a building or vehicle can have multiple shaders, and the asset
+creator can choose for each shader whether it is `Moddable` or time-based. The
+Additive Shader mod will deal with the time-based shaders, while external mods
+will deal with the `Moddable` shaders.
+
+If the external mod is not subscribed/enabled, any shaders that require it will
+not be visible (Additive Shader mod sets them hidden by default).
 
 ## Modding
 
-External mods instruct the Additive Shader mod to filter `RemoteControl` shaders
-in to groups based on their _tags_.
+External mods instruct the Additive Shader mod to filter `Moddable` shaders
+in to groups, based on their _tags_.
 
-For example, a mod which toggles shaders based when it's raining might use the
+For example, a mod which toggles shaders when it's raining might use the
 `on-during-rain` tag. Any shaders with that tag will be added to a group and then
 the mod can toggle visibility of the whole group when it starts/stops raining.
 
-If you want to make a shader compatible with an existing mod, just add the tags.
-
-_If you want to make your own mod, keep reading..._
+A single mod can define one or more groups, and can toggle visibility of each
+group independently. The API used by the mod handles communications between the
+mod and Additive Shader mod and provides the functionality to create and manage
+the groups.
 
 ### NuGet package
 
-First you'll need to add the AdditiveShaderAPI NuGet package to your mod.
+First you'll need to add the `AdditiveShaderAPI` NuGet package to your mod.
 
-TODO: no freaking clue yet
+> TODO: it doesn't exist yet
 
 ### Create a manager
 
-You'll need a `MonoBehaviour` to create and manage shader groups - here's an
-example of a manager for toggling shaders when it rains:
+A `MonoBehaviour` is required, which manages your groups, making them visible
+when it rains:
 
 > This is a simplified version of the 'Additive Shader - Weather Extensions' mod.
 
@@ -65,7 +68,7 @@ public class RainShaders : MonoBehaviour
     private bool initialised;
 
     private bool rainState; // true when raining
-    private bool rainStageChanged;
+    private bool rainStageChanged; // true if rainState has changed
 
     [UsedImplicitly]
     protected void Start()
@@ -73,8 +76,8 @@ public class RainShaders : MonoBehaviour
         // get unique id for group
         rainGroup = Guid.NewGuid();
 
-        // initialise api
-        api = new AdditiveShaderAPI();
+        // initialise api, passing in the name of your mod
+        api = new AdditiveShaderAPI("RainShaders");
 
         // connect to the additive shader mod
         // if it fails, the RainShaders behaviour will be disabled
@@ -89,9 +92,13 @@ public class RainShaders : MonoBehaviour
             return;
 
         if (rainStateChanged)
+        {
             api.SetGroupVisibility(rainGroup, rainState);
+            rainStateChanged = false;
+        }
     }
 
+    [UsedImplicitly]
     protected void CheckRainState()
     {
         bool currentState =
@@ -104,6 +111,7 @@ public class RainShaders : MonoBehaviour
         }
     }
 
+    [UsedImplicitly]
     protected void OnDestroy()
     {
         CancelInvoke(); // stop checking the weather
@@ -132,7 +140,7 @@ public class RainShaders : MonoBehaviour
 
 ### Attach manager to game object
 
-In your `LoadingExtension`, create a game object and connect the manager...
+The manager on its own won't do anything. We need to attach it to a `GameObject`.
 
 ```cs
 public class Loading : LoadingExtensionBase
@@ -144,7 +152,7 @@ public class Loading : LoadingExtensionBase
     {
         base.OnLevelLoaded(mode);
 
-        if (IsApplicable(mode) && AdditiveShaderAPI.isAvailable) {
+        if (IsApplicable(mode) && AdditiveShaderAPI.IsAvailable) {
 
             gameObject = new GameObject();
             gameObject.AddComponent<RainShaders>();
@@ -154,7 +162,7 @@ public class Loading : LoadingExtensionBase
     public override void OnLevelUnloading()
     {
         base.OnLevelUnloading();
-        
+
         if (!gameObject)
             return;
 
@@ -164,6 +172,7 @@ public class Loading : LoadingExtensionBase
 
     private static bool IsApplicable(LoadMode mode) =>
         mode == LoadMode.NewGame ||
+        mode == LoadMode.NewGameFromScenario ||
         mode == LoadMode.LoadGame;
 }
 ```
