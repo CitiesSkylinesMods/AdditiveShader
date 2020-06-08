@@ -141,11 +141,9 @@ namespace AdditiveShader.Manager
 
             Info = new ShaderInfo(CONTAINER_BUILDING, nameof(BuildingInfo), asset.name);
 
-            backup_maxLodDistance = asset.m_maxLodDistance;
-            backup_minLodDistance = asset.m_minLodDistance;
             backup_maxPropDistance = asset.m_maxPropDistance;
 
-            CachedRenderDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
+            CachedRenderDistance = CONTAINER_MAX_PROP_DISTANCE;
             ApplyCachedRenderDistance();
         }
 
@@ -339,51 +337,42 @@ namespace AdditiveShader.Manager
         /// </summary>
         [SuppressMessage("Maintainability", "AV1500:Member or local function contains too many statements")]
         [SuppressMessage("Maintainability", "AV1536:Non-exhaustive switch statement requires a default case clause", Justification = "Intentional>")]
-        public void RestoreDefaults()
+        public void RestoreOriginalSettings()
         {
-            try
+            switch (TypeOfAsset)
             {
-                switch (TypeOfAsset)
-                {
-                    case AssetType.Prop:
-                        Prop.m_lodHasDifferentShader = backup_lodHasDifferentShader;
-                        Prop.m_material.SetFloat("_InvFade", backup_InvFade);
-                        Prop.m_lodRenderDistance = backup_lodRenderDistance;
-                        Prop.m_maxRenderDistance = backup_maxRenderDistance;
-                        return;
+                case AssetType.Prop:
+                    Prop.m_lodHasDifferentShader = backup_lodHasDifferentShader;
+                    Prop.m_material.SetFloat("_InvFade", backup_InvFade);
+                    Prop.m_lodRenderDistance = backup_lodRenderDistance;
+                    Prop.m_maxRenderDistance = backup_maxRenderDistance;
+                    return;
 
-                    case AssetType.Building:
-                        Building.m_lodHasDifferentShader = backup_lodHasDifferentShader;
-                        Building.m_lodMissing = backup_lodMissing;
-                        Building.m_material.SetFloat("_InvFade", backup_InvFade);
-                        Building.m_mesh.colors = backup_meshColors;
-                        Building.m_maxLodDistance = backup_maxLodDistance;
-                        Building.m_minLodDistance = backup_minLodDistance;
-                        return;
+                case AssetType.Building:
+                    Building.m_lodHasDifferentShader = backup_lodHasDifferentShader;
+                    Building.m_lodMissing = backup_lodMissing;
+                    Building.m_material.SetFloat("_InvFade", backup_InvFade);
+                    Building.m_mesh.colors = backup_meshColors;
+                    Building.m_maxLodDistance = backup_maxLodDistance;
+                    Building.m_minLodDistance = backup_minLodDistance;
+                    return;
 
-                    case AssetType.Container:
-                        Building.m_maxLodDistance = backup_maxLodDistance;
-                        Building.m_minLodDistance = backup_minLodDistance;
-                        Building.m_maxPropDistance = backup_maxPropDistance;
-                        return;
+                case AssetType.Container:
+                    Building.m_maxPropDistance = backup_maxPropDistance;
+                    return;
 
-                    case AssetType.SubBuilding:
-                        SubBuilding.m_lodHasDifferentShader = backup_lodHasDifferentShader;
-                        SubBuilding.m_material.SetFloat("_InvFade", backup_InvFade);
-                        SubBuilding.m_mesh.colors = backup_meshColors;
-                        SubBuilding.m_maxLodDistance = backup_maxLodDistance;
-                        SubBuilding.m_minLodDistance = backup_maxRenderDistance;
-                        return;
+                case AssetType.SubBuilding:
+                    SubBuilding.m_lodHasDifferentShader = backup_lodHasDifferentShader;
+                    SubBuilding.m_material.SetFloat("_InvFade", backup_InvFade);
+                    SubBuilding.m_mesh.colors = backup_meshColors;
+                    SubBuilding.m_maxLodDistance = backup_maxLodDistance;
+                    SubBuilding.m_minLodDistance = backup_maxRenderDistance;
+                    return;
 
-                    case AssetType.Vehicle:
-                        Vehicle.m_lodRenderDistance = backup_lodRenderDistance;
-                        Vehicle.m_maxRenderDistance = backup_maxRenderDistance;
-                        return;
-                }
-            }
-            catch (Exception error)
-            {
-                Debug.Log($"[AdditiveShader] Unable to restore {this} to default values: \n{error}");
+                case AssetType.Vehicle:
+                    Vehicle.m_lodRenderDistance = backup_lodRenderDistance;
+                    Vehicle.m_maxRenderDistance = backup_maxRenderDistance;
+                    return;
             }
         }
 
@@ -412,9 +401,7 @@ namespace AdditiveShader.Manager
                     return;
 
                 case AssetType.Container:
-                    Building.m_maxLodDistance = Mathf.Max(Building.m_maxLodDistance, CachedRenderDistance);
-                    Building.m_minLodDistance = Mathf.Max(Building.m_minLodDistance, CachedRenderDistance);
-                    Building.m_maxPropDistance = Mathf.Max(Building.m_maxPropDistance, CONTAINER_MAX_PROP_DISTANCE);
+                    Building.m_maxPropDistance = Mathf.Max(Building.m_maxPropDistance, CachedRenderDistance);
                     return;
 
                 case AssetType.SubBuilding:
