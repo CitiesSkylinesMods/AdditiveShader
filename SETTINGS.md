@@ -13,9 +13,9 @@ The **Settings block** in a script lets you specify:
 * `intensity` -- controls the light intensity of the shader
 * `tags` (optional) -- one or more tags/labels
 
-Vehicle and sub-building shares have an extra setting:
+Vehicle and sub-building shaders have an extra setting:
 
-* `submesh` - the submesh number (starts at `0` for buildings, `1` for vehicles)
+* `submesh` - the submesh index (starts at `0` for buildings, `1` for vehicles)
 
 ## On and Off times
 
@@ -105,7 +105,8 @@ var tags = "foo bar";
 ```
 
 The main purpose of tags is for interaction with other mods that can toggle
-shaders with matching tags on/off (planned future feature).
+shaders with matching tags on/off. That will be explained more when version 2.0
+is released.
 
 ## Diagnosing problems
 
