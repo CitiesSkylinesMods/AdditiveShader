@@ -207,7 +207,6 @@ namespace AdditiveShader.Manager
         /// <summary>
         /// Terminates the manager.
         /// </summary>
-        /// <param name="reason">The reason for shutdown (optional).</param>
         [UsedImplicitly]
         protected void OnDestroy()
         {

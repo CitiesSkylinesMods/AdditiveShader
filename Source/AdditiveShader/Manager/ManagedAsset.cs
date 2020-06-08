@@ -7,7 +7,7 @@ namespace AdditiveShader.Manager
 
     /// <summary>
     /// <para>Represents an asset which uses the additive shader.</para>
-    /// <para>See <see cref="https://cslmodding.info/mod/additive-shader/"/> for details.</para>
+    /// <para>See <c>https://cslmodding.info/mod/additive-shader/</c> for details.</para>
     /// </summary>
     [SuppressMessage("StyleCop.CSharp.NamingRules", "SA1310:Field names should not contain underscore")]
     public class ManagedAsset
@@ -214,8 +214,7 @@ namespace AdditiveShader.Manager
         public bool IsContainer { get; }
 
         /// <summary>
-        /// <para>Gets a value indicating whether the additive shader for the asset is currently visible.</para>
-        /// <para>Use <see cref="Show()"/>, <see cref="Hide()"/> or <see cref="SetVisible(bool)"/> to change visibility.</para>
+        /// Gets a value indicating whether the additive shader for the asset is currently visible.
         /// </summary>
         public bool IsVisible { get; private set; }
 
@@ -227,7 +226,7 @@ namespace AdditiveShader.Manager
         /// <summary>
         /// Gets hashtags for the shader. Case sensitive. Tags should always be lower case.
         /// </summary>
-        /// <returns>Returns a <see cref="HashSet{string}"/> represetnation of the shader tags.</returns>
+        /// <returns>Returns a <c>HashTag</c> represetnation of the shader tags.</returns>
         public HashSet<string> HashTags => Info.HashTags;
 
         /// <summary>
