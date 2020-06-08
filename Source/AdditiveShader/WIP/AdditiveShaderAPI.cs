@@ -111,7 +111,7 @@ namespace AdditiveShader
         /// <param name="tag">One tag. Tags are case-sesitive, use lowercase.</param>
         /// <returns>Returns <c>true</c> if the group was created and has at least one shader, otherwise <c>false</c>.</returns>
         public bool NewGroup(Guid group, string tag) =>
-            NewGroup(group, new HashSet<string> { tag });
+            NewGroup(group, new HashSet<string> { tag, "Modded" });
 
         /// <summary>
         /// Creates a new group comtaining shaders that match all of the specified tags.
@@ -120,7 +120,7 @@ namespace AdditiveShader
         /// <param name="tags">One or more tags. Tags are case-sesitive, use lowercase.</param>
         /// <returns>Returns <c>true</c> if the group was created and has at least one shader, otherwise <c>false</c>.</returns>
         public bool NewGroup(Guid group, params string[] tags) =>
-            NewGroup(group, new HashSet<string>(tags));
+            NewGroup(group, new HashSet<string>(tags) { "Modded" });
 
         /// <summary>
         /// Creates a new group comtaining shaders that match all of the specified tags.
