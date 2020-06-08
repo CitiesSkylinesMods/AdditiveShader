@@ -7,8 +7,8 @@ There are currently four types of asset that can have the shader:
 
 * Props
 * Buildings
-* Sub-buildings
-* Vehicles
+* Building submeshes
+* Vehicle submeshes
 
 Make sure you use the right script for your asset!
 
@@ -16,8 +16,9 @@ For a guide on creating the actual assets, see [CSL Modding: Additive Shader](ht
 
 ## Settings
 
-Each script contains a **settings** block and a **code** block. Edit the settings,
-do _not_ edit the **code**.
+Each script contains a **settings** block and a **code** block.
+
+Edit the **settings**, do _not_ edit the **code**.
 
 If a `keyword` is specified, the `timeOn` and `timeOff` will be ignored. To use
 custom on/off times, set `keyword` value to `""`. For example:
@@ -41,7 +42,10 @@ For more information on settings, see [Asset Settings Guide](./SETTINGS.md).
 Once you've defined your settings, paste the whole thing (settings + code)
 in to the Mod Tools script console.
 
-## Props script
+## Props
+
+Props are extremely versatile - they can be included in other assets, and users
+can plop them manually anywhere they want.
 
 > Note: In C# programming language, numbers with `f` after them = floating point.
 
@@ -71,10 +75,9 @@ asset.m_lodObject = null;
 // End of script
 ```
 
-## Buildings script
+## Buildings
 
-> Additive Shader is sometimes unreliable with buildings. If you can't get it
-working, try using a prop instead, and then add that prop to your building.
+This applies a shader directly to the building.
 
 ```cs
 // Settings:
@@ -102,9 +105,11 @@ asset.m_lodObject = null;
 // End of script
 ```
 
-## Sub-buildings script
+## Building submeshes
 
-> These can also be unreliable; if it doesn't work, use props instead.
+This applies a shader to a building submesh. This can be useful if you want
+multiple shaders for a single building, each with its own settings.
+Alternatively you could use props.
 
 ```cs
 // Settings:
@@ -140,7 +145,10 @@ mesh.m_subInfo.m_lodObject = null;
 // End of script
 ```
 
-## Vehicles script
+## Vehicle submeshes
+
+This applies a shader to a vehicle submesh. Since v1.5.0, it _should_ be possible
+to apply blinking effects.
 
 ```cs
 // Settings:
