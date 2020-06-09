@@ -106,7 +106,7 @@ namespace AdditiveShader.Manager
             asset.m_lodHasDifferentShader = false;
             asset.m_lodMissing = true;
             asset.m_material.SetFloat("_InvFade", Info.Fade);
-            asset.m_mesh.colors = GetMeshColors(asset.m_mesh.vertices.Length);
+            asset.m_mesh.colors = GetMeshColors(asset.m_mesh.vertexCount);
 
             CachedRenderDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
             ApplyCachedRenderDistance();
@@ -171,7 +171,7 @@ namespace AdditiveShader.Manager
 
             asset.m_lodHasDifferentShader = false;
             asset.m_material.SetFloat("_InvFade", Info.Fade);
-            asset.m_mesh.colors = GetMeshColors(asset.m_mesh.vertices.Length);
+            asset.m_mesh.colors = GetMeshColors(asset.m_mesh.vertexCount);
 
             CachedRenderDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
             ApplyCachedRenderDistance();
@@ -200,7 +200,7 @@ namespace AdditiveShader.Manager
             backup_maxRenderDistance = asset.m_maxRenderDistance;
 
             asset.m_material.SetFloat("_InvFade", Info.Fade);
-            asset.m_mesh.colors = GetMeshColors(asset.m_mesh.vertices.Length);
+            asset.m_mesh.colors = GetMeshColors(asset.m_mesh.vertexCount);
 
             CachedRenderDistance = GetRenderDistance(asset.m_generatedInfo.m_size);
             ApplyCachedRenderDistance();
